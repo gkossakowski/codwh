@@ -1,0 +1,110 @@
+# SELECT IF(a>0, IF (a > 1, log(log(a)), log(-loga)), IF (a < -1, log(log(-a)), log - log -a))
+
+compute {
+  source {
+    scan {
+      column: 0
+      type: DOUBLE
+    }
+  }
+  expressions {
+    operator: IF
+    children {
+      operator: GREATER
+      children {
+        operator: COLUMN
+        column_id: 0
+      }
+      children {
+        operator: CONSTANT
+        constant_int32: 0
+      }
+    }
+    children {
+      operator: IF
+      # a>1
+      children {
+        operator: GREATER
+        children {
+          operator: COLUMN
+          column_id: 0
+        }
+        children {
+          operator: CONSTANT
+          constant_int32: 1
+        }
+      }
+      # log(log(a))
+      children {
+        operator: LOG
+        children {
+          operator: LOG
+          children {
+            operator: COLUMN
+            column_id: 0
+          }
+        }
+      }
+      # log(-log(a))
+      children {
+        operator: LOG
+        children {
+          operator: NEGATE
+          children {
+            operator: LOG
+            children {
+              operator: COLUMN
+              column_id: 0
+            }
+          }
+        }
+      }
+    }
+    children {
+      operator: IF
+      # a < -1
+      children {
+        operator: LOWER
+        children {
+          operator: COLUMN
+          column_id: 0
+        }
+        children {
+          operator: CONSTANT
+          constant_int32: -1
+        }
+      }
+      # log(log(-a))
+      children {
+        operator: LOG
+        children {
+          operator: LOG
+          children {
+            operator: NEGATE
+            children {
+              operator: COLUMN
+              column_id: 0
+            }
+          }
+        }
+      }
+      # log(-log(-a))
+      children {
+        operator: LOG
+        children {
+          operator: NEGATE
+          children {
+            operator: LOG
+            children {
+              operator: NEGATE
+              children {
+                operator: COLUMN
+                column_id: 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

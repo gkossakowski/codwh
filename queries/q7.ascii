@@ -1,0 +1,25 @@
+# SELECT SUM(a) GROUP BY b
+
+compute {
+  expressions {
+    operator: COLUMN
+    column_id: 1
+  }
+  source {    
+    group_by {
+      aggregations {
+        type: SUM
+        aggregated_column: 0
+      }
+      group_by_column: 1
+      source {
+        scan {
+          column: 0
+          type: DOUBLE
+          column: 1
+          type: INT
+        }
+      }
+    }
+  }
+}

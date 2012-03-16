@@ -1,0 +1,73 @@
+# SELECT a*b WHEREa!=0&& b!=0 && a+b>0
+
+compute {
+  expressions {
+    operator: MULTIPLY
+    children: {
+      operator: COLUMN
+      column_id: 0 
+    }
+    children: {
+      operator: COLUMN
+      column_id: 1
+    }
+  }
+  source {
+    filter {
+      expression {
+        operator: AND
+        children {
+          operator: NOT_EQUAL
+          children {
+            operator: COLUMN
+            column_id: 0
+          }
+          children {
+            operator: CONSTANT
+            constant_int32: 0
+          }
+        }
+        children {
+          operator :AND
+          children {
+            operator: NOT_EQUAL
+            children {
+              operator: COLUMN
+              column_id: 1
+            }
+            children {
+              operator: CONSTANT
+              constant_int32: 0
+            }
+          }
+          children {
+            operator: GREATER
+            children: {
+              operator: ADD
+              children {
+                operator: COLUMN
+                column_id: 0
+              }
+              children {
+                operator: COLUMN
+                column_id: 1
+              }
+            }
+            children {
+              operator: CONSTANT
+              constant_int32: 0
+            }
+          }
+        }
+      }
+      source {
+        scan {
+          column: 0
+          type: INT
+          column: 1
+          type: INT
+        }
+      }
+    }
+  }
+}

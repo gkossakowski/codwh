@@ -1,0 +1,14 @@
+# SELECT a, COUNT() GROUP BY a;
+
+group_by {
+  aggregations {
+    type: COUNT
+  }
+  group_by_column: 0
+  source {
+    scan {
+      column: 0
+      type: BOOL
+    }
+  }
+}

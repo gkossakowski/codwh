@@ -1,0 +1,68 @@
+# SELECT a + SUM(b - c) WHERE b>c GROUP BY a;
+
+compute {
+  expressions {
+    operator: ADD
+    children {
+      operator: COLUMN
+      column_id: 0
+    }
+    children {
+      operator: COLUMN
+      column_id: 1
+    }
+  }
+  source {
+    group_by {
+      aggregations {
+        type: SUM
+        aggregated_column: 1
+      }
+      group_by_column: 0
+      source {
+        compute {  # a, b - c
+          expressions {
+            operator: COLUMN
+            column_id: 0
+          }
+          expressions {
+            operator: SUBTRACT
+            children: {
+              operator: COLUMN
+              column_id: 1
+            }
+            children: {
+              operator: COLUMN
+              column_id: 2
+            }
+          }
+          source {
+            filter {
+              expression {
+                operator: GREATER
+                children {
+                  operator: COLUMN
+                  column_id: 1
+                }
+                children {
+                  operator: COLUMN
+                  column_id: 2
+                }
+              }
+              source {
+                scan {
+                  column: 0
+                  type: INT
+                  column: 1
+                  type: DOUBLE
+                  column: 2
+                  type: DOUBLE
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

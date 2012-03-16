@@ -1,0 +1,107 @@
+
+message Expression {
+  enum Operator {
+    CONSTANT = 1;
+    COLUMN = 2;
+    IF =  3; 
+
+    // Arithmetic
+    ADD = 100;
+    SUBTRACT = 101;
+    MULTIPLY = 102;
+    FLOATING_DIVIDE = 103; // 5 / 2 = 2.5
+    LOG = 150;             // Natural logarithm
+    NEGATE = 151;          // -abc
+
+    // Comparisons
+    LOWER = 200;
+    GREATER = 201;
+    EQUAL = 202;
+    NOT_EQUAL =  203;
+
+    // Logical
+    NOT = 300;
+    OR = 301;
+    AND = 302;
+  };
+
+  required Operator operator = 1;
+  repeated Expression children = 2;
+  
+  // Valid only for operator == 'constant'.
+  // At most one can be filled.
+  optional int32  constant_int32 = 10;
+  optional double constant_double = 11;
+  optional bool   constant_bool = 12;
+
+  // Valid only for operator == 'column'.
+  optional int32 column_id = 13;
+}
+
+message ScanOperation {
+  enum Type {
+    INT = 1;
+    DOUBLE = 2;
+    BOOL = 3;
+  };
+
+  // There will be the same number of columns and types, type[i] describes the
+  // type of input column[i].
+  repeated int32 column = 1;
+  repeated Type type = 2;
+}
+
+// Columns returned are the expressions, indexed in the order given. So after
+// ComputeOperations { expressions { operator: COLUMN column_id: 10 }
+//                     expressions { operator: COLUMN column_id: 0 } }
+// column index 0 will refer to the first operation (previously column 10),
+// column index 1 will refer to the second operation (previously column 0).
+message ComputeOperation {
+  required Operation source = 1;
+  repeated Expression expressions = 2;
+}
+
+// Columns are returned with the same indexing as in the source.
+message FilterOperation {
+  required Operation source = 1;
+  repeated Expression expression = 2;
+}
+
+message Aggregation {
+  enum Type {
+    SUM = 1;
+    COUNT = 2;  // As there are no NULLs, COUNT does not require aggregated_column to work on.
+  }
+  required Type type = 1;
+  optional int32 aggregated_column = 2;
+}
+
+// Returned columns ordering:
+// - first all the "group_by_colum"s are returned, in the order they are given,
+// - then all the aggregations are returned, in the order they are given.
+// So after:
+// GroupByOperation { group_by_column: 3  group_by_column: 2
+//                    aggregations { type: COUNT }
+//                    aggregations { tyoe: SUM aggregated_column: 1 } }
+// the column indices 0, 1, 2, 3 will refer to:
+// - previous column 3
+// - previous column 2
+// - the COUNT()
+// - the SUM(column 1).
+message GroupByOperation {
+  required Operation source = 1;
+  // A column cannot be specified as a group_by_column and an aggregated_column
+  // of an aggregation at the same time. The program does not have to check for
+  // this.
+  repeated int32 group_by_column = 3;
+  repeated Aggregation aggregations = 4;
+}
+
+message Operation {
+  // Exactly one of the fields below is set.
+  optional ScanOperation scan = 1;
+  optional ComputeOperation compute = 2;
+  optional FilterOperation filter = 3;
+  optional GroupByOperation group_by = 4;
+}
+

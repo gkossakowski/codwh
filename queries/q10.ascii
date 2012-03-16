@@ -1,0 +1,54 @@
+# SELECT a, SUM(b), COUNT() AS avg_b GROUP BY a HAVING avg_b == 1.
+
+filter {
+  expression {
+    operator: EQUAL
+    children {
+      operator: COLUMN
+      column_id: 2
+    }
+    children {
+      operator: CONSTANT
+      constant_double: 1.0
+    }
+  }
+  source {
+    compute {  # a, sum(b)/count()
+      expressions {
+        operator: COLUMN
+        column_id: 0
+      }
+      expressions {
+        operator: FLOATING_DIVIDE
+        children {
+          operator: COLUMN
+          column_id: 1
+        }
+        children {
+          operator: COLUMN
+          column_id: 2
+        }
+      }
+      source {
+        group_by {
+          group_by_column: 0
+          aggregations {
+            type: SUM
+            aggregated_column: 1
+          }
+          aggregations {
+            type: COUNT
+          }
+          source {
+            scan {
+              column: 0
+              type: BOOL
+              column: 1
+              type: INT
+            }
+          }
+        }
+      }
+    }
+  }
+}

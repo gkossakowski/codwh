@@ -1,0 +1,76 @@
+# SELECT a, COUNT() as cnt FROM (
+#   SELECT a, b, SUM(c) AS s WHERE b > 0 GROUP BY a, b HAVING s > 20)
+# GROUP BY a HAVING cnt < 5
+
+
+filter {
+  expression {
+    operator: LOWER
+    children {
+      operator: COLUMN
+      column_id: 1
+    }
+    children {
+      operator: CONSTANT
+      constant_int32: 5
+    }
+  }
+  source {
+    group_by {
+      group_by_column: 0
+      aggregations {
+        type: COUNT
+      }
+      source {
+        filter {
+          expression {
+            operator: GREATER
+            children {
+              operator: COLUMN
+              column_id: 2
+            }
+            children {
+              operator: CONSTANT
+              constant_int32: 20
+            }
+          }
+          source {
+            group_by {
+              group_by_column: 0
+              group_by_column: 1
+              aggregations {
+                type: SUM
+                aggregated_column: 2
+              }
+              source {
+                filter {
+                  expression {
+                    operator: GREATER
+                    children {
+                      operator: COLUMN
+                      column_id: 1
+                    }
+                    children {
+                      operator: CONSTANT
+                      constant_int32: 0
+                    }
+                  }
+                  source {
+                    scan {
+                      column: 0
+                      type: INT
+                      column: 1
+                      type: INT
+                      column: 2
+                      type: DOUBLE
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

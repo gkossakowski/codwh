@@ -1,0 +1,66 @@
+# SELECT log(a) ,log(b) WHERE b>c || a > c || d
+
+compute {
+  expressions {
+    operator: LOG
+    children: {
+      operator: COLUMN
+      column_id: 0 
+    }
+  }
+  expressions {
+    operator: LOG
+    children: {
+      operator: COLUMN
+      column_id: 1
+    }
+  }
+  source {
+    filter {
+      expression {
+        operator: OR
+        children {
+          operator: GREATER
+          children {
+            operator: COLUMN
+            column_id: 1
+          }
+          children {
+            operator: COLUMN
+            column_id: 2
+          }
+        }
+        children {
+          operator: OR
+          children {
+            operator: GREATER
+            children {
+              operator: COLUMN
+              column_id: 0
+            }
+            children {
+              operator: COLUMN
+              column_id: 2
+            }
+          }
+          children {
+            operator: COLUMN
+            column_id: 3
+          }
+        }
+      }
+      source {
+        scan {
+          column: 0
+          type: DOUBLE
+          column: 1
+          type: INT
+          column: 2
+          type: INT
+          column: 3
+          type: BOOL
+        }
+      }
+    }
+  }
+}

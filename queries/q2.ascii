@@ -1,0 +1,23 @@
+# SELECT col_0 + col_1;
+
+compute {
+  source {
+    scan {
+      column: 0
+      type: INT
+      column: 1
+      type: INT
+    }
+  }
+  expressions {
+    operator: ADD
+    children {
+      operator: COLUMN
+      column_id: 0
+    }
+    children {
+      operator: COLUMN
+      column_id: 1
+    }
+  }
+}

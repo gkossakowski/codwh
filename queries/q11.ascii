@@ -1,0 +1,64 @@
+# SELECT a, IF (a > 0, COUNT(), -COUNT()) as cnt WHERE b > 2 && b < 10 GROUP BY a HAVING cnt > 4.
+
+filter {
+  expression {
+    operator: GREATER
+    children {
+      operator: COLUMN
+      column_id: 1
+    }
+    children {
+      operator: CONSTANT
+      constant_int32: 4
+    }
+  }
+  source {
+    compute {  # a, IF (a > 0, COUNT(), -COUNT())
+      expressions {
+        operator: COLUMN
+        column_id: 0
+      }
+      expressions {
+        operator: IF
+        children {
+          operator: GREATER
+          children {
+            operator: COLUMN
+            column_id: 0
+          }
+          children {
+            operator: CONSTANT
+            constant_int32: 0
+          }
+        }
+        children {
+          operator: COLUMN
+          column_id: 1
+        }
+        children {
+          operator: NEGATE
+          children {
+            operator: COLUMN
+            column_id: 0
+          }
+        }
+      }
+      source {
+        group_by {
+          group_by_column: 0
+          aggregations {
+            type: COUNT
+          }
+          source {
+            scan {
+              column: 0
+              type: INT
+              column: 1
+              type: DOUBLE
+            }
+          }
+        }
+      }
+    }
+  }
+}
