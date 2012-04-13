@@ -1,7 +1,7 @@
 INC=-Ibuild/
 CC=g++ ${INC}
 OBJS=build/proto.o build/operators/constant_operator.o
-LIBS=-lprotobuf -lpthread
+LIBS=-lprotobuf -lpthread -lboost_program_options
 
 database: main.cc ${OBJS}
 	${CC} ${OBJS} ${LIBS} -o $@ $<
