@@ -64,7 +64,7 @@ message ComputeOperation {
 // Columns are returned with the same indexing as in the source.
 message FilterOperation {
   required Operation source = 1;
-  repeated Expression expression = 2;
+  required Expression expression = 2;
 }
 
 message Aggregation {
