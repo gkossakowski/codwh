@@ -49,7 +49,38 @@ static int findType(
       assert(expression.children_size() == 2);
       return max(findType(expression.children().Get(0), providers),
           findType(expression.children().Get(1), providers));
+    case query::Expression::FLOATING_DIVIDE:
+      assert(expression.children_size() == 2);
+      return query::ScanOperation::DOUBLE;
+    case query::Expression::LOG: // find argument type
+      return findType(expression.children().Get(0), providers);
+    case query::Expression::NEGATE:
+      assert(expression.children_size() == 1);
+      return findType(expression.children().Get(0), providers);
+    case query::Expression::LOWER:
+    case query::Expression::GREATER:
+    case query::Expression::EQUAL:
+    case query::Expression::NOT_EQUAL:
+      // find argument type
+      return findType(expression.children().Get(0), providers);
+    case query::Expression::NOT:
+    case query::Expression::OR:
+    case query::Expression::AND:
+      return query::ScanOperation::BOOL;
+    case query::Expression::IF:
+      return findType(expression.children().Get(1), providers);
+    case query::Expression::CONSTANT:
+      if (expression.has_constant_int32()) {
+        return query::ScanOperation::INT;
+      } else if (expression.has_constant_double()) {
+        return query::ScanOperation::DOUBLE;
+      } else if (expression.has_constant_bool()) {
+        return query::ScanOperation::BOOL;
+      } else {
+        assert(false);
+      }
     default:
+      std::cout << expression.DebugString() << "\n";
       assert(false);
   }
   return 0;
@@ -66,6 +97,79 @@ static Expression* createExpressionImpl(
           Factory::createExpression(expression.children().Get(0), providers),
           Factory::createExpression(expression.children().Get(1), providers)
           );
+    case query::Expression::SUBTRACT:
+      return new ExpressionMinus<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::MULTIPLY:
+      return new ExpressionMultiply<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::FLOATING_DIVIDE:
+      return new ExpressionDivide<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::AND:
+      return new ExpressionAnd(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::OR:
+      return new ExpressionOr(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::NOT:
+      return new ExpressionNot(
+          Factory::createExpression(expression.children().Get(0), providers)
+          );
+    case query::Expression::NEGATE:
+      return new ExpressionNegate<T>(
+          Factory::createExpression(expression.children().Get(0), providers)
+          );
+    case query::Expression::LOWER:
+      return new ExpressionLower<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::GREATER:
+      return new ExpressionLower<T>(
+          Factory::createExpression(expression.children().Get(1), providers),
+          Factory::createExpression(expression.children().Get(0), providers)
+          );
+    case query::Expression::EQUAL:
+      return new ExpressionEqual<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::NOT_EQUAL:
+      return new ExpressionNotEqual<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers)
+          );
+    case query::Expression::IF:
+      return new ExpressionIf<T>(
+          Factory::createExpression(expression.children().Get(0), providers),
+          Factory::createExpression(expression.children().Get(1), providers),
+          Factory::createExpression(expression.children().Get(2), providers)
+          );
+    case query::Expression::LOG:
+      return new ExpressionLog<T>(
+          Factory::createExpression(expression.children().Get(0), providers)
+          );
+    case query::Expression::CONSTANT:
+      if (expression.has_constant_int32()) {
+        return new ExpressionConstant<T>((T) expression.constant_int32());
+      } else if (expression.has_constant_double()) {
+        return new ExpressionConstant<T>((T) expression.constant_double());
+      } else if (expression.has_constant_bool()) {
+        return new ExpressionConstant<char>((bool) expression.constant_bool());
+      } else {
+        assert(false);
+      }
     default:
       assert(false);
   }

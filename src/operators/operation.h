@@ -119,6 +119,10 @@ class ComputeOperation : public Operation {
   std::ostream& debugPrint(std::ostream& output) {
     output << "ComputeOperation { \nsource = ";
     source->debugPrint(output);
+    for (unsigned i = 0 ; i < expressions.size() ; ++i) {
+      expressions[i]->debugPrint(output);
+      output << ", ";
+    }
     return output << "}\n";
   }
 };

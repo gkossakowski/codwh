@@ -5,6 +5,7 @@
 #define FACTORY_H
 
 #include <vector>
+#include <cmath>
 
 #include "proto/operations.pb.h"
 #include "server.h"
