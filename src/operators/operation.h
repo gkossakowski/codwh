@@ -10,6 +10,7 @@
 #include "node.h"
 #include "column.h"
 #include "factory.h"
+#include "expression.h"
 
 #include "proto/operations.pb.h"
 
@@ -19,6 +20,7 @@ class Operation : public Node {
  protected:
   vector<Column*> cache;
  public:
+  virtual vector<int> getTypes() = 0;
   virtual vector<Column*>* pull() = 0;
 
   int consume() {
@@ -58,6 +60,14 @@ class ScanOperation : public Operation {
     return &cache;
   }
 
+  vector<int> getTypes() {
+    vector<int> result(providers.size());
+    for (unsigned i = 0 ; i < providers.size() ; ++i) {
+      result[i] = providers[i]->getType();
+    }
+    return result;
+  }
+
   std::ostream& debugPrint(std::ostream& output) {
     output << "ScanOperation {";
     for (unsigned i = 0 ; i < providers.size() ; ++i) {
@@ -74,14 +84,36 @@ class ScanOperation : public Operation {
 
 class ComputeOperation : public Operation {
   Operation* source;
-  // TODO: expressions
+  vector<Expression*> expressions;
  public:
   ComputeOperation(const query::ComputeOperation& oper) {
     source = Factory::createOperation(oper.source());
+
+    int n = oper.expressions_size();
+    expressions = vector<Expression*>(n);
+    cache = vector<Column*>(n);
+
+    vector<int> types = source->getTypes();
+    for (int i = 0 ; i < n ; ++i) {
+      expressions[i] = Factory::createExpression(
+          oper.expressions().Get(i), types);
+    }
   }
 
   vector<Column*>* pull() {
-    return source->pull();
+    vector<Column*>* sourceColumns = source->pull();
+    for (unsigned i = 0 ; i < cache.size() ; ++i) {
+      cache[i] = expressions[i]->pull(sourceColumns);
+    }
+    return &cache;
+  }
+
+  vector<int> getTypes() {
+    vector<int> result(expressions.size());
+    for (unsigned i = 0 ; i < expressions.size() ; ++i) {
+      result[i] = expressions[i]->getType();
+    }
+    return result;
   }
 
   std::ostream& debugPrint(std::ostream& output) {

@@ -41,18 +41,22 @@ ColumnChunk<char>::consume(int column_index, Server* server) {
 
 class ColumnProvider : public Node {
   public:
-    ColumnProvider(int id):columnIndex(id) {}
-    int columnIndex;
     virtual Column* pull() = 0;
+    virtual int getType() = 0;
 };
 
 template<class T>
 class ColumnProviderImpl : public ColumnProvider {
   ColumnChunk<T> columnCache;
+  int columnIndex;
  public:
-  ColumnProviderImpl(int id): ColumnProvider(id) {}
+  ColumnProviderImpl(int id): columnIndex(id) {}
 
   inline Column* pull();
+
+  int getType() {
+    return global::getType<T>();
+  }
 
   std::ostream& debugPrint(std::ostream& out) {
     return out << "ColumnProvider(" << columnIndex << ")";
