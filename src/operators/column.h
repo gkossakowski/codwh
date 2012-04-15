@@ -12,6 +12,7 @@ class Column {
  public:
   int size;
   virtual void consume(int column_index, Server* server) = 0;
+  virtual void filter(Column* cond, Column* result) = 0;
 };
 
 template<class T>
@@ -19,7 +20,24 @@ class ColumnChunk : public Column {
  public:
   T chunk[DEFAULT_CHUNK_SIZE];
   void consume(int column_index, Server* server);
+  void filter(Column* cond, Column* res) {
+    ColumnChunk<char>* condition = static_cast<ColumnChunk<char>*>(cond);
+    ColumnChunk<T>* result = static_cast<ColumnChunk<T>*>(res);
+
+    char* cT = condition->chunk;
+    T* target = result->chunk;
+
+    int rest = 0;
+    for (int i = 0 ; i < size ; ++i) {
+      if (cT[i / 8] & (1 << (i & 7))) {
+        target[rest++] = chunk[i];
+      }
+    }
+
+    result->size = rest;
+  }
 };
+
 
 template<>
 inline void

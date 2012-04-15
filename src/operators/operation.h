@@ -128,9 +128,46 @@ class ComputeOperation : public Operation {
 };
 
 class FilterOperation : public Operation {
+  Operation* source;
+  Expression* condition;
+  vector<Column*> result;
  public:
+  FilterOperation(const query::FilterOperation& oper) {
+    source = Factory::createOperation(oper.source());
+    vector<int> types = source->getTypes();
+    result = vector<Column*>(types.size());
+    condition = Factory::createExpression(oper.expression(), types);
+
+    for (unsigned i = 0 ; i < result.size() ; ++i) {
+      result[i] = Factory::createColumnFromType(types[i]);
+    }
+  }
+
+  vector<Column*>* pull() {
+    vector<Column*>* sourceColumns = source->pull();
+    Column* cond = condition->pull(sourceColumns);
+
+    if (sourceColumns->empty()) {
+      return sourceColumns;
+    }
+
+    for (unsigned k = 0 ; k < result.size() ; ++k) {
+      (*sourceColumns)[k]->filter(cond, result[k]);
+    }
+
+    return &result;
+  }
+
   std::ostream& debugPrint(std::ostream& output) {
-    return output << "FilterOperation";
+    output << "FilterOperation { source =";
+    source->debugPrint(output);
+    output << "expression = ";
+    condition->debugPrint(output);
+    return output << "}\n";
+  }
+
+  vector<int> getTypes() {
+    return source->getTypes();
   }
 };
 

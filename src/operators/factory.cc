@@ -18,6 +18,8 @@ Factory::createOperation(const query::Operation& operation) {
     return new ScanOperation(operation.scan());
   } else if (operation.has_compute()) {
     return new ComputeOperation(operation.compute());
+  } else if (operation.has_filter()) {
+    return new FilterOperation(operation.filter());
   } else {
     assert(false);
     return NULL;
@@ -33,6 +35,20 @@ Factory::createColumnProvider(int columnId, int type) {
       return new ColumnProviderImpl<double>(columnId);
     case query::ScanOperation_Type_BOOL:
       return new ColumnProviderImpl<char>(columnId);
+    default:
+      assert(false);
+  }
+}
+
+Column*
+Factory::createColumnFromType(int type) {
+  switch (type) {
+    case query::ScanOperation_Type_INT:
+      return new ColumnChunk<int>();
+    case query::ScanOperation_Type_DOUBLE:
+      return new ColumnChunk<double>();
+    case query::ScanOperation_Type_BOOL:
+      return new ColumnChunk<char>();
     default:
       assert(false);
   }

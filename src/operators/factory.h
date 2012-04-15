@@ -15,12 +15,14 @@ using std::vector;
 class Operation;
 class ColumnProvider;
 class Expression;
+class Column;
 
 class Factory {
  public:
   static Server* server;
   static Operation* createOperation(const query::Operation& operation);
   static ColumnProvider* createColumnProvider(int columnId, int type);
+  static Column* createColumnFromType(int type);
   static Expression* createExpression(
       const query::Expression& expression, vector<int>& providers);
 };

@@ -96,7 +96,7 @@ class DoubleColumnServer : public ColumnServer {
  public:
   DoubleColumnServer(int query_size)
       : ColumnServer(query_size),
-        low_range_(random_power_of_two() % (1 << 30)),
+        low_range_(-2000 * random_power_of_two() % (1 << 30)),
         high_range_(low_range_ + random_power_of_two() % (1 << 30)),
         zoom_range_(random_power_of_two()),
         normal_(random(0, 1)) {
@@ -223,11 +223,19 @@ RealDataServer::~RealDataServer() {
 }
 
 int RealDataServer::GetDoubles(int c, int n, double* d) {
-  return column_servers_[c]->GetDoubles(n, d);
+  double res = column_servers_[c]->GetDoubles(n, d);
+  printf("Generating doubles:\n");
+  ConsumeDoubles(c, res, d);
+  printf("End generating:\n");
+  return res;
 }
 
 int RealDataServer::GetInts(int c, int n, int32* d) {
-  return column_servers_[c]->GetInts(n, d);
+  int res = column_servers_[c]->GetInts(n, d);
+  printf("Generating int:\n");
+  ConsumeInts(c, res, d);
+  printf("End generating:\n");
+  return res;
 }
 
 int RealDataServer::GetByteBools(int c, int n, bool* d) {
