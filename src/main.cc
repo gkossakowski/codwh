@@ -27,7 +27,7 @@ int runQuery(int queryId, Operation* operation) {
   Factory::server = CreateServer(queryId);
   int remaining = 1;
   while (remaining > 0) {
-    remaining = ((ScanOperation*) operation)->consume();
+    remaining = operation->consume();
   }
 
   return 0;

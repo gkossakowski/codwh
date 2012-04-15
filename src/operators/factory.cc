@@ -10,6 +10,7 @@ Server* Factory::server;
 
 Operation*
 Factory::createOperation(const query::Operation& operation) {
+  std::cout << "ABC" << operation.DebugString();
   if (operation.has_scan()) {
     return new ScanOperation(operation.scan());
   } else if (operation.has_compute()) {

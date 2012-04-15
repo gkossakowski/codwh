@@ -16,13 +16,29 @@
 using std::vector;
 
 class Operation : public Node {
+ protected:
+  vector<Column*> cache;
  public:
-  //virtual vector<Column*>* pull() = 0;
+  virtual vector<Column*>* pull() = 0;
+
+  int consume() {
+    vector<Column*>* ptr = pull();
+
+    if (ptr->empty()) {
+      return 0;
+    }
+
+    for (unsigned i = 0 ; i < ptr->size() ; ++i) {
+      (*ptr)[i]->consume(i, Factory::server);
+    }
+
+    return (*ptr)[0]->size;
+  }
+
 };
 
 class ScanOperation : public Operation {
   vector<ColumnProvider*> providers;
-  vector<Column*> cache;
  public:
   ScanOperation(const query::ScanOperation& oper) {
     int n = oper.column_size();
@@ -40,19 +56,6 @@ class ScanOperation : public Operation {
       cache[i] = providers[i]->pull();
     }
     return &cache;
-  }
-
-  int consume() {
-    if (providers.empty()) {
-      return 0;
-    }
-
-    vector<Column*>* ptr = pull();
-    for (unsigned i = 0 ; i < providers.size() ; ++i) {
-      (*ptr)[i]->consume(i, Factory::server);
-    }
-
-    return (*ptr)[0]->size;
   }
 
   std::ostream& debugPrint(std::ostream& output) {
@@ -75,6 +78,10 @@ class ComputeOperation : public Operation {
  public:
   ComputeOperation(const query::ComputeOperation& oper) {
     source = Factory::createOperation(oper.source());
+  }
+
+  vector<Column*>* pull() {
+    return source->pull();
   }
 
   std::ostream& debugPrint(std::ostream& output) {
