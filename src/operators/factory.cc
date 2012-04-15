@@ -20,6 +20,8 @@ Factory::createOperation(const query::Operation& operation) {
     return new ComputeOperation(operation.compute());
   } else if (operation.has_filter()) {
     return new FilterOperation(operation.filter());
+  } else if (operation.has_group_by()) {
+    return new GroupByOperation(operation.group_by());
   } else {
     assert(false);
     return NULL;
