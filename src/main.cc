@@ -15,7 +15,6 @@ using google::protobuf::io::FileInputStream;
 
 #include "operators/factory.h"
 #include "operators/operation.h"
-#include "operators/constant_operator.h"
 
 #include "proto/operations.pb.h"
 

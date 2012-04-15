@@ -201,7 +201,7 @@ class GroupByOperation : public Operation {
     // collect the data
     do {
       sourceColumns = source->pull();
-    while (!(*sourceColumns)[0].empty());
+    } while ((*sourceColumns)[0]->size > 0);
 
     // serve it
 
