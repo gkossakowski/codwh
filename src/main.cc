@@ -5,8 +5,18 @@
 #include <string>
 #include <vector>
 #include <boost/program_options.hpp>
+#include <fstream>
+#include <fcntl.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 
+using google::protobuf::TextFormat;
+using google::protobuf::io::FileInputStream;
+
+#include "operators/factory.h"
 #include "operators/constant_operator.h"
+
+#include "proto/operations.pb.h"
 
 namespace po = boost::program_options;
 using std::string;
@@ -21,29 +31,43 @@ int main(int args, char** argv) {
 
   po::options_description hidden("Hidden options");
   hidden.add_options()
-      ("queries", po::value< vector<string> >(), "queries")
+      ("num", po::value<int>(), "num")
+      ("queries", po::value<string>(), "queries")
   ;
   desc.add(hidden);
 
   po::positional_options_description p;
-  p.add("queries", -1);
+  p.add("num", 1).add("queries", 1);
 
   po::variables_map vm;
   po::store(po::command_line_parser(args, argv).
       options(desc).positional(p).run(), vm);
   po::notify(vm);
 
-  if (vm.count("help")) {
+  if (vm.count("help") || !vm.count("queries") || !vm.count("num")) {
     std::cout << desc << "\n";
     return 1;
   }
 
+
+  int queryNum = vm["num"].as<int>();
+  string queryFilename = vm["queries"].as<string>();
+
+  int queryFd = open(queryFilename.c_str(), O_RDONLY); 
+  FileInputStream queryFile(queryFd);
+  query::Operation rootOperation;
+  TextFormat::Parse(&queryFile, &rootOperation);
+  queryFile.Close();
+
+  Operation* operation = Factory::createOperation(rootOperation);
+
   if (vm.count("tree")) {
+    std::cout << "Query num " << queryNum;
+    std::cout << " filename " << queryFilename << "\n";
     std::cout << "Displaying query tree output:\n";
 
-    ConstantOperator op;
-    op.debugPrint(std::cout);
-    std::cout << std::endl;
+    operation->debugPrint(std::cout);
+    std::cout << rootOperation.DebugString() << std::endl;
   } else {
   }
   return 0;

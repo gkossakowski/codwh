@@ -1,3 +1,4 @@
+package query;
 
 message Expression {
   enum Operator {

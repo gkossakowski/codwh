@@ -6,9 +6,10 @@
 
 #include <iostream>
 
+#include "node.h"
 #include "operator.h"
 
-class ConstantOperator {
+class ConstantOperator : public Node {
  public:
   std::ostream& debugPrint(std::ostream& output);  
 };
