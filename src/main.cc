@@ -14,6 +14,7 @@ using google::protobuf::TextFormat;
 using google::protobuf::io::FileInputStream;
 
 #include "operators/factory.h"
+#include "operators/operation.h"
 #include "operators/constant_operator.h"
 
 #include "proto/operations.pb.h"
@@ -21,6 +22,16 @@ using google::protobuf::io::FileInputStream;
 namespace po = boost::program_options;
 using std::string;
 using std::vector;
+
+int runQuery(int queryId, Operation* operation) {
+  Factory::server = CreateServer(queryId);
+  int remaining = 1;
+  while (remaining > 0) {
+    remaining = ((ScanOperation*) operation)->consume();
+  }
+
+  return 0;
+}
 
 int main(int args, char** argv) {
   po::options_description desc("Allowed options");
@@ -67,9 +78,10 @@ int main(int args, char** argv) {
     std::cout << "Displaying query tree output:\n";
 
     operation->debugPrint(std::cout);
+    std::cout << std::endl;
     std::cout << rootOperation.DebugString() << std::endl;
-  } else {
-  }
-  return 0;
+  } 
+
+  return runQuery(queryNum, operation);
 }
 

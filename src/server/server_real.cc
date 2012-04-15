@@ -199,7 +199,8 @@ class BoolColumnServer : public ColumnServer {
 
 // RealDataServer implementation.
 RealDataServer::RealDataServer(const vector<int> &column_types) {
-  int query_size = random(1000000, 10000000);
+  //int query_size = random(1000000, 10000000);
+  int query_size = 10;
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {
     switch(*it) {

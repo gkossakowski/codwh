@@ -4,7 +4,7 @@
 #include "constant_operator.h"
 
 std::ostream&
-ConstantOperator::debugPrint(std::ostream& output){
-  output << "ConstantOperator";
+ConstantOperator::debugPrint(std::ostream& output){ output <<
+  "ConstantOperator";
   return output;
 }
