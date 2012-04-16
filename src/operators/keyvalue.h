@@ -8,9 +8,10 @@
 
 class Key {
  public:
+  int n;
   any_t* keys;
-  static int n;
   Key(const Key& clone) {
+    n = clone.n;
     keys = new any_t[n];
     memcpy(keys, clone.keys, sizeof(*keys) * n);
   }
@@ -37,10 +38,11 @@ class Key {
 
 class Value {
  public:
-  static int n; // ugly
+  int n;
   any_t* values;
 
   Value(const Value& clone) {
+    n = clone.n;
     values = new any_t[n];
     memcpy(values, clone.values, n * sizeof(any_t));
   }
@@ -52,9 +54,9 @@ class Value {
     update(sources, aggregate, idx);
   }
 
-  void putInto(vector<Column*>* result, int idx) {
+  void putInto(vector<Column*>* result, int idx, int keyN) {
     for (int i = 0 ; i < n ; ++i) {
-      (*result)[Key::n + i]->take(values[i], idx);
+      (*result)[keyN + i]->take(values[i], idx);
     }
   }
 
@@ -77,7 +79,7 @@ class Value {
 typedef struct {
   long operator() (const Key& a) const {
     long h = 0;
-    for (int i = 0 ; i < Key::n ; ++i) {
+    for (int i = 0 ; i < a.n ; ++i) {
       unsigned val = *((unsigned*) (a.keys + i)) ^ *(((unsigned*) (a.keys + i)) + 1);
       h = ( h << 4 ) ^ ( h >> 28 ) ^ val;
     }
@@ -87,7 +89,7 @@ typedef struct {
 
 typedef struct {
   long operator() (const Key& a, const Key& b) const {
-    return 0 == memcmp(a.keys, b.keys, Key::n * sizeof(any_t));
+    return a.n == b.n && 0 == memcmp(a.keys, b.keys, a.n * sizeof(any_t));
   }
 } KeyEq;
 

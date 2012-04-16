@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <tr1/unordered_map>
 #include "node.h"
 #include "column.h"
 #include "factory.h"
@@ -177,12 +178,17 @@ class FilterOperation : public Operation {
   }
 };
 
+typedef std::tr1::unordered_map<Key, Value, KeyHash, KeyEq> MapType;
+
 class GroupByOperation : public Operation {
   Operation* source;
   vector<int> groupByColumn;
   vector<int> aggregations; // non negative sum on idx, -1 count
+  MapType* m;
+  MapType::iterator it;
  public:
   GroupByOperation(const query::GroupByOperation& oper) {
+    m = NULL;
     source = Factory::createOperation(oper.source());
 
     groupByColumn = vector<int>(oper.group_by_column_size());
