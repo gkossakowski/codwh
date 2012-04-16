@@ -1,4 +1,5 @@
-# SELECT a, IF (a > 0, COUNT(), -COUNT()) as cnt WHERE b > 2 && b < 10 GROUP BY a HAVING cnt > 4.
+# SELECT a, IF (a > 0, COUNT(), -COUNT()) as cnt FROM [source] 
+#  WHERE b > 2.0 && b < 10.0 GROUP BY a HAVING cnt > 4.
 
 filter {
   expression {
@@ -39,7 +40,7 @@ filter {
           operator: NEGATE
           children {
             operator: COLUMN
-            column_id: 0
+            column_id: 1
           }
         }
       }
@@ -50,11 +51,40 @@ filter {
             type: COUNT
           }
           source {
-            scan {
-              column: 0
-              type: INT
-              column: 1
-              type: DOUBLE
+            filter { # SCAN a, b WHERE b > 2.0 && b < 10.0
+              expression {
+                operator: AND
+                children {                
+                  operator: GREATER
+                  children {
+                    operator: COLUMN
+                    column_id: 1
+                  }
+                  children {
+                    operator: CONSTANT
+                    constant_double: 2.0
+                  }                  
+                }
+                children {
+                  operator: LOWER
+                  children {
+                    operator: COLUMN
+                    column_id: 1
+                  }
+                  children {
+                    operator: CONSTANT
+                    constant_double: 10.0
+                  }
+                }
+              }
+              source {  # SCAN a, b
+                scan {
+                  column: 0
+                  type: INT
+                  column: 1
+                  type: DOUBLE
+                }
+              }
             }
           }
         }

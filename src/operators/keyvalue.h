@@ -87,7 +87,7 @@ typedef struct {
 
 typedef struct {
   long operator() (const Key& a, const Key& b) const {
-    return memcmp(a.keys, b.keys, Key::n * sizeof(any_t));
+    return 0 == memcmp(a.keys, b.keys, Key::n * sizeof(any_t));
   }
 } KeyEq;
 
