@@ -48,6 +48,7 @@ class ColumnChunk : public Column {
 
     result->size = rest;
   }
+  int alwaysTrueOrFalse() { return 0; }
 };
 
 
@@ -176,6 +177,43 @@ ColumnProviderImpl<char>::pull() {
     Factory::server->GetBitBools(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
 }
+
+template<>
+inline int
+ColumnChunk<char>::alwaysTrueOrFalse() {
+  if (size == 0)
+    return 0;
+  if (chunk[0] & 1) {
+    // always true
+    int sizeInBytes = size / 8;
+    for (int i = 0 ; i < sizeInBytes ; ++i) {
+      if (chunk[i] != 0xff) {
+        return 0;
+      }
+    }
+    for (int i = (size / 8) * 8 ; i < size ; ++i) {
+      if (0 == (chunk[i / 8] & (1 << (i & 7)))) {
+        return 0;
+      }
+    }
+    return 1;
+  } else {
+    // always false
+    int sizeInBytes = size / 8;
+    for (int i = 0 ; i < sizeInBytes ; ++i) {
+      if (chunk[i] != 0) {
+        return 0;
+      }
+    }
+    for (int i = (size / 8) * 8 ; i < size ; ++i) {
+      if (0 != (chunk[i / 8] & (1 << (i & 7)))) {
+        return 0;
+      }
+    }
+    return -1;
+  }
+}
+
 
 
 #endif
