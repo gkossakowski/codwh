@@ -8,11 +8,18 @@
 #include "factory.h"
 #include "global.h"
 
+union any_t {
+  int int32;
+  double double_;
+  bool boolean;
+};
+
 class Column {
  public:
   int size;
   virtual void consume(int column_index, Server* server) = 0;
   virtual void filter(Column* cond, Column* result) = 0;
+  virtual void fill(any_t* any, int idx) = 0;
 };
 
 template<class T>
@@ -20,6 +27,7 @@ class ColumnChunk : public Column {
  public:
   T chunk[DEFAULT_CHUNK_SIZE];
   void consume(int column_index, Server* server);
+  void fill(any_t* any, int idx);
   void filter(Column* cond, Column* res) {
     ColumnChunk<char>* condition = static_cast<ColumnChunk<char>*>(cond);
     ColumnChunk<T>* result = static_cast<ColumnChunk<T>*>(res);
@@ -47,14 +55,32 @@ ColumnChunk<int>::consume(int column_index, Server* server) {
 
 template<>
 inline void
+ColumnChunk<int>::fill(any_t* any, int idx) {
+  any->int32 = chunk[idx];
+}
+
+template<>
+inline void
 ColumnChunk<double>::consume(int column_index, Server* server) {
   server->ConsumeDoubles(column_index, size, &chunk[0]);
 }
 
 template<>
 inline void
+ColumnChunk<double>::fill(any_t* any, int idx) {
+  any->double_ = chunk[idx];
+}
+
+template<>
+inline void
 ColumnChunk<char>::consume(int column_index, Server* server) {
   server->ConsumeBitBools(column_index, size, &chunk[0]);
+}
+
+template<>
+inline void
+ColumnChunk<char>::fill(any_t* any, int idx) {
+  any->boolean = ((chunk[idx / 8] & (1 << (idx & 7))) != 0);
 }
 
 class ColumnProvider : public Node {

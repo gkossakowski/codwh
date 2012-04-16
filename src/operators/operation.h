@@ -11,6 +11,7 @@
 #include "column.h"
 #include "factory.h"
 #include "expression.h"
+#include "keyvalue.h"
 
 #include "proto/operations.pb.h"
 
@@ -153,6 +154,11 @@ class FilterOperation : public Operation {
 
     for (unsigned k = 0 ; k < result.size() ; ++k) {
       (*sourceColumns)[k]->filter(cond, result[k]);
+    }
+
+    if (result[0]->size == 0 && (*sourceColumns)[0]->size > 0) {
+      // No results, reapeat
+      return pull();
     }
 
     return &result;
