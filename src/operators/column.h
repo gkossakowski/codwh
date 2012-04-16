@@ -20,6 +20,8 @@ class Column {
   virtual void consume(int column_index, Server* server) = 0;
   virtual void filter(Column* cond, Column* result) = 0;
   virtual void fill(any_t* any, int idx) = 0;
+  virtual void addTo(any_t* any, int idx) = 0;
+  virtual void take(const any_t& any, int idx) = 0;
 };
 
 template<class T>
@@ -28,6 +30,8 @@ class ColumnChunk : public Column {
   T chunk[DEFAULT_CHUNK_SIZE];
   void consume(int column_index, Server* server);
   void fill(any_t* any, int idx);
+  void addTo(any_t* any, int idx);
+  void take(const any_t& any, int idx);
   void filter(Column* cond, Column* res) {
     ColumnChunk<char>* condition = static_cast<ColumnChunk<char>*>(cond);
     ColumnChunk<T>* result = static_cast<ColumnChunk<T>*>(res);
@@ -61,6 +65,18 @@ ColumnChunk<int>::fill(any_t* any, int idx) {
 
 template<>
 inline void
+ColumnChunk<int>::addTo(any_t* any, int idx) {
+  any->int32 += chunk[idx];
+}
+
+template<>
+inline void
+ColumnChunk<int>::take(const any_t& any, int idx) {
+  chunk[idx] = any.int32;
+}
+
+template<>
+inline void
 ColumnChunk<double>::consume(int column_index, Server* server) {
   server->ConsumeDoubles(column_index, size, &chunk[0]);
 }
@@ -73,6 +89,18 @@ ColumnChunk<double>::fill(any_t* any, int idx) {
 
 template<>
 inline void
+ColumnChunk<double>::addTo(any_t* any, int idx) {
+  any->double_ += chunk[idx];
+}
+
+template<>
+inline void
+ColumnChunk<double>::take(const any_t& any, int idx) {
+  chunk[idx] = any.double_;
+}
+
+template<>
+inline void
 ColumnChunk<char>::consume(int column_index, Server* server) {
   server->ConsumeBitBools(column_index, size, &chunk[0]);
 }
@@ -81,6 +109,24 @@ template<>
 inline void
 ColumnChunk<char>::fill(any_t* any, int idx) {
   any->boolean = ((chunk[idx / 8] & (1 << (idx & 7))) != 0);
+}
+
+template<>
+inline void
+ColumnChunk<char>::addTo(any_t* any, int idx) {
+  if (chunk[idx / 8] & (1 << (idx &7))) {
+    any->int32 += 1;
+  }
+}
+
+template<>
+inline void
+ColumnChunk<char>::take(const any_t& any, int idx) {
+  if (any.boolean) {
+    chunk[idx / 8] |= 1 << (idx & 7); 
+  } else {
+    chunk[idx / 8] &= ~(1 << (idx & 7)); 
+  }
 }
 
 class ColumnProvider : public Node {

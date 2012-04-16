@@ -184,10 +184,12 @@ class GroupByOperation : public Operation {
  public:
   GroupByOperation(const query::GroupByOperation& oper) {
     source = Factory::createOperation(oper.source());
+
     groupByColumn = vector<int>(oper.group_by_column_size());
     for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
       groupByColumn[i] = oper.group_by_column().Get(i);
     }
+
     aggregations = vector<int>(oper.aggregations_size());
     for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
       query::Aggregation agr = oper.aggregations().Get(i);
@@ -199,21 +201,15 @@ class GroupByOperation : public Operation {
         assert(false);
       }
     }
+
+    vector<int> types = getTypes();
+    cache = vector<Column*>(types.size());
+    for (unsigned int i = 0 ; i < cache.size() ; ++i) {
+      cache[i] = Factory::createColumnFromType(types[i]);
+    }
   }
 
-  vector<Column*>* pull() {
-    vector<Column*>* sourceColumns;
-
-    // collect the data
-    do {
-      sourceColumns = source->pull();
-    } while ((*sourceColumns)[0]->size > 0);
-
-    // serve it
-
-    // TODO: fix it
-    return sourceColumns;
-  }
+  vector<Column*>* pull();
 
   std::ostream& debugPrint(std::ostream& output) {
     output << "GroupByOperation { source = ";
