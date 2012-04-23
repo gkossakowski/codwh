@@ -1,7 +1,7 @@
-INC=-Ibuild/ -I../build/ -Iserver/ -I.
+INC=-Ibuild/ -I../build/ -Iserver/ -I. -I/opt/local/include/
 CC=g++ -O2 -Wall ${INC}
 OBJS=build/proto.o build/server.o  build/operators/factory.o build/groupby.o
-LIBS=-lprotobuf -lpthread -lboost_program_options
+LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 
 exec_plan: database
 	cp $< $@
