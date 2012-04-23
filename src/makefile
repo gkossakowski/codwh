@@ -1,7 +1,10 @@
 INC=-Ibuild/ -I../build/ -Iserver/ -I.
-CC=g++ -g -Wall ${INC}
+CC=g++ -O2 -Wall ${INC}
 OBJS=build/proto.o build/server.o  build/operators/factory.o build/groupby.o
 LIBS=-lprotobuf -lpthread -lboost_program_options
+
+exec_plan: database
+	cp $< $@
 
 database: main.cc ${OBJS}
 	${CC} ${OBJS} ${LIBS} -o $@ $<
