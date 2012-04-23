@@ -377,12 +377,12 @@ class ExpressionOr : public Expression2<char> {
   ExpressionOr(Expression* l, Expression* r): Expression2<char>(l, r) { }
   void pullInt(Column* a, Column* b) {
     cache.size = a->size;
-    unsigned* aT = (unsigned*) static_cast<ColumnChunk<char>*>(a)->chunk;
-    unsigned* bT = (unsigned*) static_cast<ColumnChunk<char>*>(b)->chunk;
-    unsigned* target = (unsigned*) cache.chunk;
-    int sizeInWords = (cache.size + 31) / 32;
+    char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
+    char* bT = static_cast<ColumnChunk<char>*>(b)->chunk;
+    char* target = cache.chunk;
+    int sizeInBytes = (cache.size + 7) / 8;
 
-    for (int i = 0 ; i < sizeInWords ; ++i) {
+    for (int i = 0 ; i < sizeInBytes ; ++i) {
       target[i] = aT[i] | bT[i];
     }
   }
@@ -393,12 +393,12 @@ class ExpressionAnd : public Expression2<char> {
   ExpressionAnd(Expression* l, Expression* r): Expression2<char>(l, r) { }
   void pullInt(Column* a, Column* b) {
     cache.size = a->size;
-    unsigned* aT = (unsigned*) static_cast<ColumnChunk<char>*>(a)->chunk;
-    unsigned* bT = (unsigned*) static_cast<ColumnChunk<char>*>(b)->chunk;
-    unsigned* target = (unsigned*) cache.chunk;
-    int sizeInWords = (cache.size + 31) / 32;
+    char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
+    char* bT = static_cast<ColumnChunk<char>*>(b)->chunk;
+    char* target = cache.chunk;
+    int sizeInBytes = (cache.size + 7) / 8;
 
-    for (int i = 0 ; i < sizeInWords ; ++i) {
+    for (int i = 0 ; i < sizeInBytes ; ++i) {
       target[i] = aT[i] & bT[i];
     }
   }
@@ -408,11 +408,11 @@ class ExpressionNot : public Expression1<char> {
  public:
   ExpressionNot(Expression* l): Expression1<char>(l) { }
   void pullInt(Column* a) {
-    unsigned* aT = (unsigned*) static_cast<ColumnChunk<char>*>(a)->chunk;
-    unsigned* target = (unsigned*) cache.chunk;
-    int sizeInWords = (cache.size + 31) / 32;
+    char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
+    char* target = cache.chunk;
+    int sizeInBytes = (cache.size + 7) / 8;
 
-    for (int i = 0 ; i < sizeInWords ; ++i) {
+    for (int i = 0 ; i < sizeInBytes ; ++i) {
       target[i] = ~aT[i];
     }
   }

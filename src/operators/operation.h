@@ -149,19 +149,17 @@ class FilterOperation : public Operation {
     vector<Column*>* sourceColumns = source->pull();
     Column* cond = condition->pull(sourceColumns);
 
-    if (result[0]->size == 0) {
+    if (sourceColumns->empty()) {
       return sourceColumns;
     }
 
-    int ret = static_cast<ColumnChunk<char>*>(cond)->alwaysTrueOrFalse(); 
-    if (ret == 1) {
-      return sourceColumns;
-    } else if (ret == -1) {
+    for (unsigned k = 0 ; k < result.size() ; ++k) {
+      (*sourceColumns)[k]->filter(cond, result[k]);
+    }
+
+    if (result[0]->size == 0 && (*sourceColumns)[0]->size > 0) {
+      // No results, reapeat
       return pull();
-    } else {
-      for (unsigned k = 0 ; k < result.size() ; ++k) {
-        (*sourceColumns)[k]->filter(cond, result[k]);
-      }
     }
 
     return &result;

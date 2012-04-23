@@ -319,7 +319,7 @@ vector<int> ColumnMap(int query_id) {
     case 5: return CreateVector(1, 1);
     case 6: return CreateVector(2, 1, 1, 3);
     case 7: return CreateVector(2, 1);
-    case 8: return CreateVector(3, 1);
+    case 8: return CreateVector(3);
     case 9: return CreateVector(1, 2, 2);
     case 10: return CreateVector(3, 1);
     case 11: return CreateVector(1, 2);
