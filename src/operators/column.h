@@ -51,6 +51,7 @@ class ColumnChunk : public Column {
 };
 
 
+// consume, fill, addto, take {{{
 template<>
 inline void
 ColumnChunk<int>::consume(int column_index, Server* server) {
@@ -128,6 +129,7 @@ ColumnChunk<char>::take(const any_t& any, int idx) {
     chunk[idx / 8] &= ~(1 << (idx & 7)); 
   }
 }
+// }}}
 
 class ColumnProvider : public Node {
   public:
@@ -149,7 +151,8 @@ class ColumnProviderImpl : public ColumnProvider {
   }
 
   std::ostream& debugPrint(std::ostream& out) {
-    return out << "ColumnProvider(" << columnIndex << ")";
+    return out << "ColumnProvider(" << columnIndex << ": "
+        << global::getTypeName<T>() << ")";
   }
 };
 

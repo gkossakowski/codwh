@@ -73,7 +73,7 @@ class ScanOperation : public Operation {
   std::ostream& debugPrint(std::ostream& output) {
     output << "ScanOperation {";
     for (unsigned i = 0 ; i < providers.size() ; ++i) {
-      output << *providers[i] << ", ";
+      output << *providers[i] << ",\n";
     }
     return output << "}\n";
   }
@@ -119,6 +119,7 @@ class ComputeOperation : public Operation {
 
   std::ostream& debugPrint(std::ostream& output) {
     output << "ComputeOperation { \nsource = " << *source;
+    output << "expressions = ";
     for (unsigned i = 0 ; i < expressions.size() ; ++i) {
       output << *expressions[i] << ", ";
     }
@@ -164,8 +165,7 @@ class FilterOperation : public Operation {
 
   std::ostream& debugPrint(std::ostream& output) {
     output << "FilterOperation { source =" << *source;
-    output << "expression = " << *condition;
-    return output << "}\n";
+    return output << "condition = " << *condition << "}\n";
   }
 
   vector<int> getTypes() {
