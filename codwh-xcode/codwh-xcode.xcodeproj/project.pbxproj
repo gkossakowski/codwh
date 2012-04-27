@@ -44,7 +44,6 @@
 		31363BB51545C3FB00CE05DD /* server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server.cc; sourceTree = "<group>"; };
 		31363BB61545C3FB00CE05DD /* server.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = server.h; sourceTree = "<group>"; };
 		31363BB81545C3FB00CE05DD /* server_real.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server_real.cc; sourceTree = "<group>"; };
-		31363BB91545C3FB00CE05DD /* server_real_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server_real_test.cc; sourceTree = "<group>"; };
 		31363BBA1545C3FB00CE05DD /* server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server.cc; sourceTree = "<group>"; };
 		31363BFF15488A3900CE05DD /* libprotobuf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libprotobuf.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/local/lib/libprotobuf.dylib; sourceTree = DEVELOPER_DIR; };
 		31363C0A1548965600CE05DD /* operations.pb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = operations.pb.cc; sourceTree = "<group>"; };
@@ -125,7 +124,6 @@
 				31363BB51545C3FB00CE05DD /* server.cc */,
 				31363BB61545C3FB00CE05DD /* server.h */,
 				31363BB81545C3FB00CE05DD /* server_real.cc */,
-				31363BB91545C3FB00CE05DD /* server_real_test.cc */,
 			);
 			path = server;
 			sourceTree = "<group>";
