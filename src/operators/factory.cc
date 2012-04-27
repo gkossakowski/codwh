@@ -228,6 +228,7 @@ Factory::createExpression(
         return createExpressionLogic<char, char>(expression, providers);
       default:
         assert(false); // unknown combination
+        return NULL;
     }
       
   }

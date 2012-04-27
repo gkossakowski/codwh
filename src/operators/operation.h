@@ -73,8 +73,7 @@ class ScanOperation : public Operation {
   std::ostream& debugPrint(std::ostream& output) {
     output << "ScanOperation {";
     for (unsigned i = 0 ; i < providers.size() ; ++i) {
-      providers[i]->debugPrint(output);
-      output << ", ";
+      output << *providers[i] << ", ";
     }
     return output << "}\n";
   }
@@ -119,11 +118,9 @@ class ComputeOperation : public Operation {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ComputeOperation { \nsource = ";
-    source->debugPrint(output);
+    output << "ComputeOperation { \nsource = " << *source;
     for (unsigned i = 0 ; i < expressions.size() ; ++i) {
-      expressions[i]->debugPrint(output);
-      output << ", ";
+      output << *expressions[i] << ", ";
     }
     return output << "}\n";
   }
@@ -166,10 +163,8 @@ class FilterOperation : public Operation {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "FilterOperation { source =";
-    source->debugPrint(output);
-    output << "expression = ";
-    condition->debugPrint(output);
+    output << "FilterOperation { source =" << *source;
+    output << "expression = " << *condition;
     return output << "}\n";
   }
 
@@ -218,8 +213,7 @@ class GroupByOperation : public Operation {
   vector<Column*>* pull();
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "GroupByOperation { source = ";
-    source->debugPrint(output);
+    output << "GroupByOperation { source = " << *source;
     output << "columns = ";
     for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
       output << groupByColumn[i] << ",";

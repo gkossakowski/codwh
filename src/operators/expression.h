@@ -43,9 +43,7 @@ class Expression1 : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << getName() << "(";
-    left->debugPrint(output);
-    return output << ")";
+    return output << getName() << "(" << *left << ")";
   }
 };
 
@@ -74,11 +72,9 @@ class Expression2 : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << getName() << "(";
-    left->debugPrint(output);
+    output << getName() << "(" << *left;
     output << " " << getSymbol() << " ";
-    right->debugPrint(output);
-    return output << ")";
+    return output << *right << ")";
   }
 };
 
@@ -442,8 +438,7 @@ class ExpressionLog : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ExpressionLog { ";
-    left->debugPrint(output);
+    output << "ExpressionLog { " << *left;
     return output << "}";
   }
 
@@ -512,11 +507,7 @@ class ExpressionLogic : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ExpressionLogic { ";
-    left->debugPrint(output);
-    output << " ";
-    right->debugPrint(output);
-    return output << "}\n";
+    return output << "ExpressionLogic { " << *left << " " << *right << "}\n";
   }
 
   int getType() {
@@ -630,13 +621,8 @@ class ExpressionIf : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ExpressionIf{ ";
-    condition->debugPrint(output);
-    output << ": ";
-    left->debugPrint(output);
-    output << " ";
-    right->debugPrint(output);
-    return output << "}\n";
+    output << "ExpressionIf { " << *condition << " ? ";
+    return output << *left << " : " << *right << "}\n";
   }
 
   int getType() {

@@ -1,6 +1,8 @@
 INC=-Ibuild/ -I../build/ -Iserver/ -I. -I/opt/local/include/
 CC=g++ -g -Wall ${INC}
-OBJS=build/proto.o build/server.o  build/operators/factory.o build/groupby.o
+OBJS=build/proto.o build/server.o \
+		 build/operators/node.o build/groupby.o \
+		 build/operators/factory.o
 LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 
 exec_plan: database
