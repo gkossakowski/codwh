@@ -25,7 +25,7 @@ class Expression1 : public Expression {
  protected:
   ColumnChunk<T> cache;
   Expression* left;
-  virtual void pullInt(Column* data) = 0;
+  virtual void pullInternal(Column* data) = 0;
   virtual string getName() { return ""; }
 
  public:
@@ -34,7 +34,7 @@ class Expression1 : public Expression {
   Column* pull(vector<Column*>* sources) {
     Column* leftData = left->pull(sources);
     cache.size = leftData->size;
-    pullInt(leftData);
+    pullInternal(leftData);
     return &cache;
   }
 
@@ -43,9 +43,7 @@ class Expression1 : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << getName() << "(";
-    left->debugPrint(output);
-    return output << ")";
+    return output << getName() << "(" << *left << ")";
   }
 };
 
@@ -55,7 +53,7 @@ class Expression2 : public Expression {
   ColumnChunk<T> cache;
   Expression* left;
   Expression* right;
-  virtual void pullInt(Column* leftData, Column* rightData) = 0;
+  virtual void pullInternal(Column* leftData, Column* rightData) = 0;
   virtual string getName() { return ""; }
   virtual string getSymbol() { return ""; }
 
@@ -65,7 +63,7 @@ class Expression2 : public Expression {
   Column* pull(vector<Column*>* sources) {
     Column* leftData = left->pull(sources);
     Column* rightData = right->pull(sources);
-    pullInt(leftData, rightData);
+    pullInternal(leftData, rightData);
     return &cache;
   }
 
@@ -74,11 +72,9 @@ class Expression2 : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << getName() << "(";
-    left->debugPrint(output);
+    output << getName() << "(" << *left;
     output << " " << getSymbol() << " ";
-    right->debugPrint(output);
-    return output << ")";
+    return output << *right << ")";
   }
 };
 
@@ -92,7 +88,8 @@ class ExpressionColumn : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    return output << "ExpressionColumn(" << columnId << ")";
+    return output << "ExpressionColumn(" << columnId
+        << ": " << global::getTypeName<T>() << ")";
   }
 
   int getType() {
@@ -106,6 +103,7 @@ class ExpressionConstant : public Expression {
   ColumnChunk<T> chunk;
  public:
   ExpressionConstant(bool v) {
+    chunk.size = DEFAULT_CHUNK_SIZE;
     if (v) {
       val = 0xff;
     } else {
@@ -116,6 +114,7 @@ class ExpressionConstant : public Expression {
     }
   }
   ExpressionConstant(T v): val(v) {
+    chunk.size = DEFAULT_CHUNK_SIZE;
     for (int i = 0 ; i < chunk.size ; ++i) {
       chunk.chunk[i] = val;
     }
@@ -144,12 +143,12 @@ class ExpressionAdd : public Expression2<T> {
  public:
   ExpressionAdd(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
-  void pullInt(Column* a, Column* b);
+  void pullInternal(Column* a, Column* b);
 };
 
 template<>
 inline void
-ExpressionAdd<int>::pullInt(Column* a, Column* b) {
+ExpressionAdd<int>::pullInternal(Column* a, Column* b) {
   int* aT = ((ColumnChunk<int>*) a)->chunk;
   int* bT = ((ColumnChunk<int>*) b)->chunk;
   int* target = cache.chunk;
@@ -163,7 +162,7 @@ ExpressionAdd<int>::pullInt(Column* a, Column* b) {
 
 template<>
 inline void
-ExpressionAdd<double>::pullInt(Column* a, Column* b) {
+ExpressionAdd<double>::pullInternal(Column* a, Column* b) {
   cache.size = a->size;
   double* target = cache.chunk;
 
@@ -191,7 +190,7 @@ ExpressionAdd<double>::pullInt(Column* a, Column* b) {
 
 template<>
 inline void
-ExpressionAdd<char>::pullInt(Column* a, Column* b) {
+ExpressionAdd<char>::pullInternal(Column* a, Column* b) {
   assert(false);
 }
 // }}}
@@ -202,12 +201,12 @@ class ExpressionMinus : public Expression2<T> {
  public:
   ExpressionMinus(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
-  void pullInt(Column* a, Column* b);
+  void pullInternal(Column* a, Column* b);
 };
 
 template<>
 inline void
-ExpressionMinus<int>::pullInt(Column* a, Column* b) {
+ExpressionMinus<int>::pullInternal(Column* a, Column* b) {
   int* aT = ((ColumnChunk<int>*) a)->chunk;
   int* bT = ((ColumnChunk<int>*) b)->chunk;
   int* target = cache.chunk;
@@ -221,7 +220,7 @@ ExpressionMinus<int>::pullInt(Column* a, Column* b) {
 
 template<>
 inline void
-ExpressionMinus<double>::pullInt(Column* a, Column* b) {
+ExpressionMinus<double>::pullInternal(Column* a, Column* b) {
   cache.size = a->size;
   double* target = cache.chunk;
 
@@ -249,7 +248,7 @@ ExpressionMinus<double>::pullInt(Column* a, Column* b) {
 
 template<>
 inline void
-ExpressionMinus<char>::pullInt(Column* a, Column* b) {
+ExpressionMinus<char>::pullInternal(Column* a, Column* b) {
   assert(false);
 }
 // }}}
@@ -260,12 +259,12 @@ class ExpressionMultiply : public Expression2<T> {
  public:
   ExpressionMultiply(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
-  void pullInt(Column* a, Column* b);
+  void pullInternal(Column* a, Column* b);
 };
 
 template<>
 inline void
-ExpressionMultiply<int>::pullInt(Column* a, Column* b) {
+ExpressionMultiply<int>::pullInternal(Column* a, Column* b) {
   int* aT = ((ColumnChunk<int>*) a)->chunk;
   int* bT = ((ColumnChunk<int>*) b)->chunk;
   int* target = cache.chunk;
@@ -279,7 +278,7 @@ ExpressionMultiply<int>::pullInt(Column* a, Column* b) {
 
 template<>
 inline void
-ExpressionMultiply<double>::pullInt(Column* a, Column* b) {
+ExpressionMultiply<double>::pullInternal(Column* a, Column* b) {
   cache.size = a->size;
   double* target = cache.chunk;
 
@@ -307,7 +306,7 @@ ExpressionMultiply<double>::pullInt(Column* a, Column* b) {
 
 template<>
 inline void
-ExpressionMultiply<char>::pullInt(Column* a, Column* b) {
+ExpressionMultiply<char>::pullInternal(Column* a, Column* b) {
   assert(false);
 }
 // }}}
@@ -318,23 +317,23 @@ class ExpressionDivide : public Expression2<T> {
  public:
   ExpressionDivide(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
-  void pullInt(Column* a, Column* b);
+  void pullInternal(Column* a, Column* b);
 };
 
 template<>
 inline void
-ExpressionDivide<int>::pullInt(Column* a, Column* b) {
+ExpressionDivide<int>::pullInternal(Column* a, Column* b) {
   assert(false);
 }
 
 template<>
 inline void
-ExpressionDivide<double>::pullInt(Column* a, Column* b) {
+ExpressionDivide<double>::pullInternal(Column* a, Column* b) {
   cache.size = a->size;
   double* target = cache.chunk;
 
-  if (dynamic_cast<ColumnChunk<double>*>(a) == NULL ||
-      dynamic_cast<ColumnChunk<double>*>(b) == NULL
+  if ((dynamic_cast<ColumnChunk<double>*>(a) == NULL) ^
+      (dynamic_cast<ColumnChunk<double>*>(b) == NULL)
       ) {
     if (dynamic_cast<ColumnChunk<double>*>(a) == NULL) {
       swap(a, b);
@@ -343,30 +342,30 @@ ExpressionDivide<double>::pullInt(Column* a, Column* b) {
     int *bT = ((ColumnChunk<int>*) b)->chunk; 
 
     for (int i = 0 ; i < cache.size ; ++i) {
-      target[i] = aT[i] * bT[i];
+      target[i] = aT[i] / bT[i];
     }
   } else if (dynamic_cast<ColumnChunk<double>*>(a) == NULL &&
       dynamic_cast<ColumnChunk<double>*>(b) == NULL
       ) {
-    double *aT = ((ColumnChunk<double>*) a)->chunk; 
-    double *bT = ((ColumnChunk<double>*) b)->chunk; 
-
-    for (int i = 0 ; i < cache.size ; ++i) {
-      target[i] = aT[i] * bT[i];
-    }
-  } else {
     int *aT = ((ColumnChunk<int>*) a)->chunk; 
     int *bT = ((ColumnChunk<int>*) b)->chunk; 
 
     for (int i = 0 ; i < cache.size ; ++i) {
-      target[i] = aT[i] * bT[i];
+      target[i] = aT[i] / ((double) bT[i]);
+    }
+  } else {
+    double *aT = ((ColumnChunk<double>*) a)->chunk; 
+    double *bT = ((ColumnChunk<double>*) b)->chunk; 
+
+    for (int i = 0 ; i < cache.size ; ++i) {
+      target[i] = aT[i] / bT[i];
     }
   }
 }
 
 template<>
 inline void
-ExpressionDivide<char>::pullInt(Column* a, Column* b) {
+ExpressionDivide<char>::pullInternal(Column* a, Column* b) {
   assert(false);
 }
 // }}}
@@ -375,7 +374,7 @@ ExpressionDivide<char>::pullInt(Column* a, Column* b) {
 class ExpressionOr : public Expression2<char> {
  public:
   ExpressionOr(Expression* l, Expression* r): Expression2<char>(l, r) { }
-  void pullInt(Column* a, Column* b) {
+  void pullInternal(Column* a, Column* b) {
     cache.size = a->size;
     char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
     char* bT = static_cast<ColumnChunk<char>*>(b)->chunk;
@@ -391,7 +390,7 @@ class ExpressionOr : public Expression2<char> {
 class ExpressionAnd : public Expression2<char> {
  public:
   ExpressionAnd(Expression* l, Expression* r): Expression2<char>(l, r) { }
-  void pullInt(Column* a, Column* b) {
+  void pullInternal(Column* a, Column* b) {
     cache.size = a->size;
     char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
     char* bT = static_cast<ColumnChunk<char>*>(b)->chunk;
@@ -407,7 +406,7 @@ class ExpressionAnd : public Expression2<char> {
 class ExpressionNot : public Expression1<char> {
  public:
   ExpressionNot(Expression* l): Expression1<char>(l) { }
-  void pullInt(Column* a) {
+  void pullInternal(Column* a) {
     char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
     char* target = cache.chunk;
     int sizeInBytes = (cache.size + 7) / 8;
@@ -440,8 +439,7 @@ class ExpressionLog : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ExpressionLog { ";
-    left->debugPrint(output);
+    output << "ExpressionLog { " << *left;
     return output << "}";
   }
 
@@ -456,12 +454,12 @@ template<class T>
 class ExpressionNegate : public Expression1<T> {
  public:
   ExpressionNegate(Expression* l): Expression1<T>(l) { }
-  void pullInt(Column* a);
+  void pullInternal(Column* a);
 };
 
 template<>
 inline void
-ExpressionNegate<int>::pullInt(Column* a) {
+ExpressionNegate<int>::pullInternal(Column* a) {
   int* target = cache.chunk;
   int* aT = static_cast<ColumnChunk<int>*>(a)->chunk;
 
@@ -472,7 +470,7 @@ ExpressionNegate<int>::pullInt(Column* a) {
 
 template<>
 inline void
-ExpressionNegate<double>::pullInt(Column* a) {
+ExpressionNegate<double>::pullInternal(Column* a) {
   double* target = cache.chunk;
   double* aT = static_cast<ColumnChunk<double>*>(a)->chunk;
 
@@ -483,49 +481,45 @@ ExpressionNegate<double>::pullInt(Column* a) {
 
 template<>
 inline void
-ExpressionNegate<char>::pullInt(Column* a) {
+ExpressionNegate<char>::pullInternal(Column* a) {
   assert(false);
 }
 // }}}
 
 // Lower, Equal, not equal {{{
-template<class T>
+template<class TL, class TR>
 class ExpressionLogic : public Expression {
  protected:
   Expression* left;
   Expression* right;
   ColumnChunk<char> result;
-  virtual void pullLogic(T* aT, T* bT, char* target, int size) = 0;
+  virtual void pullLogic(TL* aT, TR* bT, char* target, int size) = 0;
  public:
   ExpressionLogic(Expression* l, Expression* r): left(l), right(r) { }
   Column* pull(vector<Column*>* sources) {
     Column* a = left->pull(sources);
     Column* b = right->pull(sources);
     result.size = a->size;
-    T* aT = static_cast<ColumnChunk<T>*>(a)->chunk;
-    T* bT = static_cast<ColumnChunk<T>*>(b)->chunk;
+    TL* aT = static_cast<ColumnChunk<TL>*>(a)->chunk;
+    TR* bT = static_cast<ColumnChunk<TR>*>(b)->chunk;
     char* target = &result.chunk[0];
     pullLogic(aT, bT, target, result.size);
     return &result;
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ExpressionLogic { ";
-    left->debugPrint(output);
-    output << " ";
-    right->debugPrint(output);
-    return output << "}\n";
+    return output << "ExpressionLogic { " << *left << " " << *right << "}\n";
   }
 
   int getType() {
-    return global::getType<T>();
+    return global::getType<char>();
   }
 };
 
-template<class T>
-class ExpressionLower : public ExpressionLogic<T> {
+template<class TL, class TR>
+class ExpressionLower : public ExpressionLogic<TL, TR> {
  protected:
-  void pullLogic(T* aT, T* bT, char* target, int size) {
+  void pullLogic(TL* aT, TR* bT, char* target, int size) {
     int n = (size + 7) / 8;
     for(int i = 0 ; i < n ; ++i) {
       target[i] = 0;
@@ -536,13 +530,14 @@ class ExpressionLower : public ExpressionLogic<T> {
     }
   }
  public:
-  ExpressionLower(Expression* l, Expression* r): ExpressionLogic<T>(l, r) { }
+  ExpressionLower(Expression* l, Expression* r):
+    ExpressionLogic<TL, TR>(l, r) { }
 };
 
-template<class T>
-class ExpressionEqual : public ExpressionLogic<T> {
+template<class TL, class TR>
+class ExpressionEqual : public ExpressionLogic<TL, TR> {
  protected:
-  void pullLogic(T* aT, T* bT, char* target, int size) {
+  void pullLogic(TL* aT, TR* bT, char* target, int size) {
     int n = (size + 7) / 8;
     for(int i = 0 ; i < n ; ++i) {
       target[i] = 0;
@@ -553,22 +548,23 @@ class ExpressionEqual : public ExpressionLogic<T> {
     }
   }
  public:
-  ExpressionEqual(Expression* l, Expression* r): ExpressionLogic<T>(l, r) { }
+  ExpressionEqual(Expression* l, Expression* r):
+    ExpressionLogic<TL, TR>(l, r) { }
 };
 
 template<>
 inline void
-ExpressionEqual<char>::pullLogic(char* aT, char* bT, char* target, int size) {
+ExpressionEqual<char, char>::pullLogic(char* aT, char* bT, char* target, int size) {
   int n = (size + 7) / 8;
   for(int i = 0 ; i < n ; ++i) {
     target[i] = ~(aT[i] ^ bT[i]);
   }
 }
 
-template<class T>
-class ExpressionNotEqual : public ExpressionLogic<T> {
+template<class TL, class TR>
+class ExpressionNotEqual : public ExpressionLogic<TL, TR> {
  protected:
-  void pullLogic(T* aT, T* bT, char* target, int size) {
+  void pullLogic(TL* aT, TR* bT, char* target, int size) {
     int n = (size + 7) / 8;
     for(int i = 0 ; i < n ; ++i) {
       target[i] = 0;
@@ -579,12 +575,13 @@ class ExpressionNotEqual : public ExpressionLogic<T> {
     }
   }
  public:
-  ExpressionNotEqual(Expression* l, Expression* r): ExpressionLogic<T>(l, r) { }
+  ExpressionNotEqual(Expression* l, Expression* r):
+    ExpressionLogic<TL, TR>(l, r) { }
 };
 
 template<>
 inline void
-ExpressionNotEqual<char>::pullLogic(char* aT, char* bT, char* target, int size) {
+ExpressionNotEqual<char, char>::pullLogic(char* aT, char* bT, char* target, int size) {
   int n = (size + 7) / 8;
   for(int i = 0 ; i < n ; ++i) {
     target[i] = aT[i] ^ bT[i];
@@ -625,13 +622,8 @@ class ExpressionIf : public Expression {
   }
 
   std::ostream& debugPrint(std::ostream& output) {
-    output << "ExpressionIf{ ";
-    condition->debugPrint(output);
-    output << ": ";
-    left->debugPrint(output);
-    output << " ";
-    right->debugPrint(output);
-    return output << "}\n";
+    output << "ExpressionIf { " << *condition << " ? ";
+    return output << *left << " : " << *right << "}\n";
   }
 
   int getType() {

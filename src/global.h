@@ -4,6 +4,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <string>
+
 const int DEFAULT_CHUNK_SIZE = 512;
 
 namespace global {
@@ -26,6 +28,27 @@ inline int getType<double>() {
 template<>
 inline int getType<char>() {
   return 3;
+}
+
+
+template<class T>
+inline std::string getTypeName() {
+  return "(unknown)";
+}
+
+template<>
+inline std::string getTypeName<int>() {
+  return "INT";
+}
+
+template<>
+inline std::string getTypeName<double>() {
+  return "DOUBLE";
+}
+
+template<>
+inline std::string getTypeName<char>() {
+  return "BOOL";
 }
 
 }

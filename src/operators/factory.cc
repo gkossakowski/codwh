@@ -56,6 +56,7 @@ Factory::createColumnFromType(int type) {
   }
 }
 
+// findType {{{
 static int findType(
     const query::Expression& expression, const vector<int>& providers) {
   switch (expression.operator_()) {
@@ -103,7 +104,9 @@ static int findType(
   }
   return 0;
 }
+// }}}
 
+// createExpressionImpl {{{
 template<class T>
 static Expression* createExpressionImpl(
     const query::Expression& expression, vector<int>& providers) {
@@ -149,25 +152,11 @@ static Expression* createExpressionImpl(
           Factory::createExpression(expression.children().Get(0), providers)
           );
     case query::Expression::LOWER:
-      return new ExpressionLower<T>(
-          Factory::createExpression(expression.children().Get(0), providers),
-          Factory::createExpression(expression.children().Get(1), providers)
-          );
     case query::Expression::GREATER:
-      return new ExpressionLower<T>(
-          Factory::createExpression(expression.children().Get(1), providers),
-          Factory::createExpression(expression.children().Get(0), providers)
-          );
     case query::Expression::EQUAL:
-      return new ExpressionEqual<T>(
-          Factory::createExpression(expression.children().Get(0), providers),
-          Factory::createExpression(expression.children().Get(1), providers)
-          );
     case query::Expression::NOT_EQUAL:
-      return new ExpressionNotEqual<T>(
-          Factory::createExpression(expression.children().Get(0), providers),
-          Factory::createExpression(expression.children().Get(1), providers)
-          );
+      assert(false); // should be handled elsewhere
+      return NULL;
     case query::Expression::IF:
       return new ExpressionIf<T>(
           Factory::createExpression(expression.children().Get(0), providers),
@@ -193,10 +182,56 @@ static Expression* createExpressionImpl(
   }
   return NULL;
 }
+// }}}
+
+template<class TL, class TR>
+static Expression* createExpressionLogic(
+    const query::Expression& expression, vector<int>& providers) {
+  Expression* left =
+    Factory::createExpression(expression.children().Get(0), providers);
+  Expression* right =
+    Factory::createExpression(expression.children().Get(1), providers);
+
+  if (expression.operator_() == query::Expression::GREATER) {
+    return new ExpressionLower<TR, TL>(right, left);
+  } else if (expression.operator_() == query::Expression::LOWER) {
+    return new ExpressionLower<TL, TR>(left, right);
+  } else if (expression.operator_() == query::Expression::EQUAL) {
+    return new ExpressionEqual<TL, TR>(left, right);
+  } else if (expression.operator_() == query::Expression::NOT_EQUAL) {
+    return new ExpressionNotEqual<TL, TR>(left, right);
+  } else {
+    assert(false);
+  }
+}
+
 
 Expression*
 Factory::createExpression(
     const query::Expression& expression, vector<int>& providers) {
+  if (expression.operator_() == query::Expression::GREATER ||
+      expression.operator_() == query::Expression::LOWER ||
+      expression.operator_() == query::Expression::EQUAL ||
+      expression.operator_() == query::Expression::NOT_EQUAL) {
+    int leftType = findType(expression.children().Get(0), providers);
+    int rightType = findType(expression.children().Get(1), providers);
+    switch (10 * leftType + rightType) {
+      case 11:
+        return createExpressionLogic<int, int>(expression, providers);
+      case 22: 
+        return createExpressionLogic<double, double>(expression, providers);
+      case 12:
+        return createExpressionLogic<int, double>(expression, providers);
+      case 21:
+        return createExpressionLogic<double, int>(expression, providers);
+      case 33:
+        return createExpressionLogic<char, char>(expression, providers);
+      default:
+        assert(false); // unknown combination
+        return NULL;
+    }
+      
+  }
   switch (findType(expression, providers)) {
     case 1:
       return createExpressionImpl<int>(expression, providers);

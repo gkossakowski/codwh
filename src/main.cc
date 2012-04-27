@@ -76,13 +76,19 @@ int main(int args, char** argv) {
   if (vm.count("tree")) {
     std::cout << "Query num " << queryNum;
     std::cout << " filename " << queryFilename << "\n";
-    std::cout << "Displaying query tree output:\n";
 
-    operation->debugPrint(std::cout);
+    std::cout << "Our query tree:\n" << *operation << "\n";
     std::cout << std::endl;
-    std::cout << rootOperation.DebugString() << std::endl;
+    std::cout << "Proto query tree:\n" << 
+        rootOperation.DebugString() << "\n";
+
+    return 0;
   } 
 
-  return runQuery(server, queryNum, operation);
+  int ret = runQuery(server, queryNum, operation);
+
+  delete Factory::server;
+
+  return ret;
 }
 
