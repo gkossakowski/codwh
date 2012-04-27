@@ -364,6 +364,8 @@ public:
 
   virtual int GetBitBools(int number, char* destination) {
     number = Serve(number);
+    int n = (number + 7) * sizeof(*destination) / 8;
+    memset(destination, 0, n);
     for (int i = 0; i < number; ++i) {
       destination[i / 8] |= (Generate() << (i & 7));
     }
