@@ -22,8 +22,15 @@ namespace po = boost::program_options;
 using std::string;
 using std::vector;
 
-int runQuery(int queryId, Operation* operation) {
-  Factory::server = CreateServer(queryId);
+int runQuery(const string server, int queryId, Operation* operation) {
+  if (server == "default") {
+    Factory::server = CreateServer(queryId);
+  } else if (server == "test") {
+    // TODO
+    assert(false);
+  } else {
+    assert(false);
+  }
   int remaining = 1;
   while (remaining > 0) {
     remaining = operation->consume();
@@ -34,9 +41,11 @@ int runQuery(int queryId, Operation* operation) {
 
 int main(int args, char** argv) {
   po::options_description desc("Allowed options");
+  string server;
   desc.add_options()
       ("help", "produce help message")
       ("tree", "display query tree instead of running it")
+      ("server", po::value<string>(&server)->default_value("default"), "choose server you want: test, default")
   ;
 
   po::options_description hidden("Hidden options");
@@ -81,6 +90,6 @@ int main(int args, char** argv) {
     std::cout << rootOperation.DebugString() << std::endl;
   } 
 
-  return runQuery(queryNum, operation);
+  return runQuery(server, queryNum, operation);
 }
 
