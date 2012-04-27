@@ -83,6 +83,10 @@ int main(int args, char** argv) {
     std::cout << rootOperation.DebugString() << std::endl;
   } 
 
-  return runQuery(server, queryNum, operation);
+  int ret = runQuery(server, queryNum, operation);
+
+  delete Factory::server;
+
+  return ret;
 }
 

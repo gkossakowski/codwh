@@ -106,6 +106,7 @@ class ExpressionConstant : public Expression {
   ColumnChunk<T> chunk;
  public:
   ExpressionConstant(bool v) {
+    chunk.size = DEFAULT_CHUNK_SIZE;
     if (v) {
       val = 0xff;
     } else {
@@ -116,6 +117,7 @@ class ExpressionConstant : public Expression {
     }
   }
   ExpressionConstant(T v): val(v) {
+    chunk.size = DEFAULT_CHUNK_SIZE;
     for (int i = 0 ; i < chunk.size ; ++i) {
       chunk.chunk[i] = val;
     }
@@ -333,8 +335,8 @@ ExpressionDivide<double>::pullInt(Column* a, Column* b) {
   cache.size = a->size;
   double* target = cache.chunk;
 
-  if (dynamic_cast<ColumnChunk<double>*>(a) == NULL ||
-      dynamic_cast<ColumnChunk<double>*>(b) == NULL
+  if ((dynamic_cast<ColumnChunk<double>*>(a) == NULL) ^
+      (dynamic_cast<ColumnChunk<double>*>(b) == NULL)
       ) {
     if (dynamic_cast<ColumnChunk<double>*>(a) == NULL) {
       swap(a, b);
@@ -343,23 +345,23 @@ ExpressionDivide<double>::pullInt(Column* a, Column* b) {
     int *bT = ((ColumnChunk<int>*) b)->chunk; 
 
     for (int i = 0 ; i < cache.size ; ++i) {
-      target[i] = aT[i] * bT[i];
+      target[i] = aT[i] / bT[i];
     }
   } else if (dynamic_cast<ColumnChunk<double>*>(a) == NULL &&
       dynamic_cast<ColumnChunk<double>*>(b) == NULL
       ) {
-    double *aT = ((ColumnChunk<double>*) a)->chunk; 
-    double *bT = ((ColumnChunk<double>*) b)->chunk; 
-
-    for (int i = 0 ; i < cache.size ; ++i) {
-      target[i] = aT[i] * bT[i];
-    }
-  } else {
     int *aT = ((ColumnChunk<int>*) a)->chunk; 
     int *bT = ((ColumnChunk<int>*) b)->chunk; 
 
     for (int i = 0 ; i < cache.size ; ++i) {
-      target[i] = aT[i] * bT[i];
+      target[i] = aT[i] / ((double) bT[i]);
+    }
+  } else {
+    double *aT = ((ColumnChunk<double>*) a)->chunk; 
+    double *bT = ((ColumnChunk<double>*) b)->chunk; 
+
+    for (int i = 0 ; i < cache.size ; ++i) {
+      target[i] = aT[i] / bT[i];
     }
   }
 }
@@ -489,21 +491,21 @@ ExpressionNegate<char>::pullInt(Column* a) {
 // }}}
 
 // Lower, Equal, not equal {{{
-template<class T>
+template<class TL, class TR>
 class ExpressionLogic : public Expression {
  protected:
   Expression* left;
   Expression* right;
   ColumnChunk<char> result;
-  virtual void pullLogic(T* aT, T* bT, char* target, int size) = 0;
+  virtual void pullLogic(TL* aT, TR* bT, char* target, int size) = 0;
  public:
   ExpressionLogic(Expression* l, Expression* r): left(l), right(r) { }
   Column* pull(vector<Column*>* sources) {
     Column* a = left->pull(sources);
     Column* b = right->pull(sources);
     result.size = a->size;
-    T* aT = static_cast<ColumnChunk<T>*>(a)->chunk;
-    T* bT = static_cast<ColumnChunk<T>*>(b)->chunk;
+    TL* aT = static_cast<ColumnChunk<TL>*>(a)->chunk;
+    TR* bT = static_cast<ColumnChunk<TR>*>(b)->chunk;
     char* target = &result.chunk[0];
     pullLogic(aT, bT, target, result.size);
     return &result;
@@ -518,14 +520,14 @@ class ExpressionLogic : public Expression {
   }
 
   int getType() {
-    return global::getType<T>();
+    return global::getType<char>();
   }
 };
 
-template<class T>
-class ExpressionLower : public ExpressionLogic<T> {
+template<class TL, class TR>
+class ExpressionLower : public ExpressionLogic<TL, TR> {
  protected:
-  void pullLogic(T* aT, T* bT, char* target, int size) {
+  void pullLogic(TL* aT, TR* bT, char* target, int size) {
     int n = (size + 7) / 8;
     for(int i = 0 ; i < n ; ++i) {
       target[i] = 0;
@@ -536,13 +538,14 @@ class ExpressionLower : public ExpressionLogic<T> {
     }
   }
  public:
-  ExpressionLower(Expression* l, Expression* r): ExpressionLogic<T>(l, r) { }
+  ExpressionLower(Expression* l, Expression* r):
+    ExpressionLogic<TL, TR>(l, r) { }
 };
 
-template<class T>
-class ExpressionEqual : public ExpressionLogic<T> {
+template<class TL, class TR>
+class ExpressionEqual : public ExpressionLogic<TL, TR> {
  protected:
-  void pullLogic(T* aT, T* bT, char* target, int size) {
+  void pullLogic(TL* aT, TR* bT, char* target, int size) {
     int n = (size + 7) / 8;
     for(int i = 0 ; i < n ; ++i) {
       target[i] = 0;
@@ -553,22 +556,23 @@ class ExpressionEqual : public ExpressionLogic<T> {
     }
   }
  public:
-  ExpressionEqual(Expression* l, Expression* r): ExpressionLogic<T>(l, r) { }
+  ExpressionEqual(Expression* l, Expression* r):
+    ExpressionLogic<TL, TR>(l, r) { }
 };
 
 template<>
 inline void
-ExpressionEqual<char>::pullLogic(char* aT, char* bT, char* target, int size) {
+ExpressionEqual<char, char>::pullLogic(char* aT, char* bT, char* target, int size) {
   int n = (size + 7) / 8;
   for(int i = 0 ; i < n ; ++i) {
     target[i] = ~(aT[i] ^ bT[i]);
   }
 }
 
-template<class T>
-class ExpressionNotEqual : public ExpressionLogic<T> {
+template<class TL, class TR>
+class ExpressionNotEqual : public ExpressionLogic<TL, TR> {
  protected:
-  void pullLogic(T* aT, T* bT, char* target, int size) {
+  void pullLogic(TL* aT, TR* bT, char* target, int size) {
     int n = (size + 7) / 8;
     for(int i = 0 ; i < n ; ++i) {
       target[i] = 0;
@@ -579,12 +583,13 @@ class ExpressionNotEqual : public ExpressionLogic<T> {
     }
   }
  public:
-  ExpressionNotEqual(Expression* l, Expression* r): ExpressionLogic<T>(l, r) { }
+  ExpressionNotEqual(Expression* l, Expression* r):
+    ExpressionLogic<TL, TR>(l, r) { }
 };
 
 template<>
 inline void
-ExpressionNotEqual<char>::pullLogic(char* aT, char* bT, char* target, int size) {
+ExpressionNotEqual<char, char>::pullLogic(char* aT, char* bT, char* target, int size) {
   int n = (size + 7) / 8;
   for(int i = 0 ; i < n ; ++i) {
     target[i] = aT[i] ^ bT[i];
