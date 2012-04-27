@@ -37,4 +37,4 @@ class Server {
 };
 
 // The query id is the id that comes from the operations proto.
-Server *CreateServer(int query_id);
+Server *CreateServer(int query_id, std::string variant);

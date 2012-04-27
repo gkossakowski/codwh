@@ -23,14 +23,7 @@ using std::string;
 using std::vector;
 
 int runQuery(const string server, int queryId, Operation* operation) {
-  if (server == "default") {
-    Factory::server = CreateServer(queryId);
-  } else if (server == "test") {
-    // TODO
-    assert(false);
-  } else {
-    assert(false);
-  }
+  Factory::server = CreateServer(queryId, server);
   int remaining = 1;
   while (remaining > 0) {
     remaining = operation->consume();

@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <utility>
+#include <string>
 #include "server.h"
 
 using ::std::min;
@@ -67,13 +68,20 @@ class ColumnServer {
   int rows_left_;
 };
 
+class ColumnFactory {
+  public:
+    virtual ColumnServer* getIntColumnServer(const int query_size) const = 0;
+    virtual ColumnServer* getBoolColumnServer(const int query_size) const = 0;
+    virtual ColumnServer* getDoubleColumnServer(const int query_size) const = 0;
+};
+
 class RealDataServer : public Server {
  public:
   // The column_types vector should
   // contain types of columns - if column_types[i] = j, then the i-th
   // (0-indexed) column of the input is of type j (where 1 means int, 2 means
   // double and 3 means bool).
-  RealDataServer(const vector<int> &column_types);
+  RealDataServer(const vector<int> &column_types, const ColumnFactory* const factory);
   ~RealDataServer();
   int GetDoubles(int column_index, int number, double* destination);
   int GetInts(int column_index, int number, int32* destination);
@@ -197,18 +205,31 @@ class BoolColumnServer : public ColumnServer {
   const int probability_;
 };
 
+class DefaultColumnFactory : public ColumnFactory {
+public:
+  virtual ColumnServer* getIntColumnServer(const int query_size) const {
+    return new IntColumnServer(query_size);
+  }
+  virtual ColumnServer* getBoolColumnServer(const int query_size) const {
+    return new BoolColumnServer(query_size);
+  }
+  virtual ColumnServer* getDoubleColumnServer(const int query_size) const {
+    return new DoubleColumnServer(query_size);
+  }
+};
+
 // RealDataServer implementation.
-RealDataServer::RealDataServer(const vector<int> &column_types) {
+RealDataServer::RealDataServer(const vector<int> &column_types, const ColumnFactory* const factory) {
   //int query_size = random(1000000, 10000000);
   int query_size = 10;
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {
     switch(*it) {
-      case 1: column_servers_.push_back(new IntColumnServer(query_size));
+      case 1: column_servers_.push_back(factory->getIntColumnServer(query_size));
               break;
-      case 2: column_servers_.push_back(new DoubleColumnServer(query_size));
+      case 2: column_servers_.push_back(factory->getDoubleColumnServer(query_size));
               break;
-      case 3: column_servers_.push_back(new BoolColumnServer(query_size));
+      case 3: column_servers_.push_back(factory->getBoolColumnServer(query_size));
               break;
       default: assert(false);
     }
@@ -328,6 +349,10 @@ vector<int> ColumnMap(int query_id) {
   }
 }
 
-Server *CreateServer(int query_id) {
-  return new RealDataServer(ColumnMap(query_id));
+Server *CreateServer(int query_id, std::string variant) {
+  ColumnFactory* factory;
+  if (variant == "default") {
+    factory = new DefaultColumnFactory();
+  }
+  return new RealDataServer(ColumnMap(query_id), factory);
 }
