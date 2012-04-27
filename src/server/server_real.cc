@@ -68,20 +68,13 @@ class ColumnServer {
   int rows_left_;
 };
 
-class ColumnFactory {
-  public:
-    virtual ColumnServer* getIntColumnServer(const int query_size) const = 0;
-    virtual ColumnServer* getBoolColumnServer(const int query_size) const = 0;
-    virtual ColumnServer* getDoubleColumnServer(const int query_size) const = 0;
-};
-
 class RealDataServer : public Server {
  public:
   // The column_types vector should
   // contain types of columns - if column_types[i] = j, then the i-th
   // (0-indexed) column of the input is of type j (where 1 means int, 2 means
   // double and 3 means bool).
-  RealDataServer(const vector<int> &column_types, const ColumnFactory* const factory);
+  RealDataServer(const vector<int> &column_types);
   ~RealDataServer();
   int GetDoubles(int column_index, int number, double* destination);
   int GetInts(int column_index, int number, int32* destination);
@@ -205,31 +198,18 @@ class BoolColumnServer : public ColumnServer {
   const int probability_;
 };
 
-class DefaultColumnFactory : public ColumnFactory {
-public:
-  virtual ColumnServer* getIntColumnServer(const int query_size) const {
-    return new IntColumnServer(query_size);
-  }
-  virtual ColumnServer* getBoolColumnServer(const int query_size) const {
-    return new BoolColumnServer(query_size);
-  }
-  virtual ColumnServer* getDoubleColumnServer(const int query_size) const {
-    return new DoubleColumnServer(query_size);
-  }
-};
-
 // RealDataServer implementation.
-RealDataServer::RealDataServer(const vector<int> &column_types, const ColumnFactory* const factory) {
+RealDataServer::RealDataServer(const vector<int> &column_types) {
   //int query_size = random(1000000, 10000000);
   int query_size = 10;
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {
     switch(*it) {
-      case 1: column_servers_.push_back(factory->getIntColumnServer(query_size));
+      case 1: column_servers_.push_back(new IntColumnServer(query_size));
               break;
-      case 2: column_servers_.push_back(factory->getDoubleColumnServer(query_size));
+      case 2: column_servers_.push_back(new DoubleColumnServer(query_size));
               break;
-      case 3: column_servers_.push_back(factory->getBoolColumnServer(query_size));
+      case 3: column_servers_.push_back(new BoolColumnServer(query_size));
               break;
       default: assert(false);
     }
@@ -301,6 +281,192 @@ void RealDataServer::ConsumeBitBools(int column_index, int number,
   }
 }
 
+// TestDataServer
+
+class TestDataServer : public Server {
+public:
+  // The column_types vector should
+  // contain types of columns - if column_types[i] = j, then the i-th
+  // (0-indexed) column of the input is of type j (where 1 means int, 2 means
+  // double and 3 means bool).
+  TestDataServer(const vector<int> &column_types);
+  ~TestDataServer();
+  int GetDoubles(int column_index, int number, double* destination);
+  int GetInts(int column_index, int number, int32* destination);
+  int GetByteBools(int column_index, int number, bool* destination);
+  int GetBitBools(int column_index, int number, char* destination);
+
+  // The Consume methods printf the output to screen. This is useful for
+  // correctness checking, for running benchmarks you should likely redefine
+  // them to do nothing.
+  void ConsumeDoubles(int column_index, int number, const double* destination);
+  void ConsumeInts(int column_index, int number, const int32* destination);
+  void ConsumeByteBools(int column_index, int number, const bool* destination);
+  void ConsumeBitBools(int column_index, int number, const char* destination);
+
+private:
+  vector<ColumnServer *> column_servers_;
+};
+
+class DoubleTestColumnServer : public ColumnServer {
+public:
+  DoubleTestColumnServer(int query_size)
+  : ColumnServer(query_size), counter(0.0) {}
+
+  int GetDoubles(int number, double *destination) {
+    number = Serve(number);
+    for (int i = 0; i < number; ++i) {
+      destination[i] = Generate();
+    }
+    return number;
+  }
+
+private:
+  double Generate() {
+    return ((counter++) + 0.1) - 5.0;
+  }
+  double counter;
+};
+
+// Column Server implementations.
+class IntTestColumnServer : public ColumnServer {
+public:
+  IntTestColumnServer(int query_size)
+  : ColumnServer(query_size), counter(-5) {}
+
+  int GetInts(int number, int *destination) {
+    number = Serve(number);
+    for (int i = 0; i < number; ++i) {
+      destination[i] = Generate();
+    }
+    return number;
+  }
+
+private:
+  int Generate() {
+    return counter++;
+  }
+  int counter;
+};
+
+class BoolTestColumnServer : public ColumnServer {
+public:
+  BoolTestColumnServer(int query_size)
+  : ColumnServer(query_size), counter(0) {}
+
+  int GetByteBools(int number, bool *destination) {
+    number = Serve(number);
+    for (int i = 0; i < number; ++i) {
+      destination[i] = Generate();
+    }
+    return number;
+  }
+
+  virtual int GetBitBools(int number, char* destination) {
+    number = Serve(number);
+    for (int i = 0; i < number; ++i) {
+      destination[i / 8] |= (Generate() << (i & 7));
+    }
+    return number;
+  }
+
+private:
+  char Generate() {
+    return (counter++ % 5) > 2;
+  }
+  char counter;
+};
+
+// TestDataServer implementation.
+TestDataServer::TestDataServer(const vector<int> &column_types) {
+  int query_size = 10;
+  vector<int>::const_iterator it;
+  for (it = column_types.begin(); it != column_types.end(); ++it) {
+    switch(*it) {
+      case 1: column_servers_.push_back(new IntTestColumnServer(query_size));
+        break;
+      case 2: column_servers_.push_back(new DoubleTestColumnServer(query_size));
+        break;
+      case 3: column_servers_.push_back(new BoolTestColumnServer(query_size));
+        break;
+      default: assert(false);
+    }
+  }
+}
+
+TestDataServer::~TestDataServer() {
+  vector<ColumnServer *>::iterator it;
+  for (it = column_servers_.begin(); it != column_servers_.end(); ++it) {
+    delete *it;
+  }
+}
+
+int TestDataServer::GetDoubles(int c, int n, double* d) {
+  double res = column_servers_[c]->GetDoubles(n, d);
+  printf("Generating doubles:\n");
+  ConsumeDoubles(c, res, d);
+  printf("End generating:\n");
+  return res;
+}
+
+int TestDataServer::GetInts(int c, int n, int32* d) {
+  int res = column_servers_[c]->GetInts(n, d);
+  printf("Generating int:\n");
+  ConsumeInts(c, res, d);
+  printf("End generating:\n");
+  return res;
+}
+
+int TestDataServer::GetByteBools(int c, int n, bool* d) {
+  printf("Generating byte bools:\n");
+  int res = column_servers_[c]->GetByteBools(n, d);
+  ConsumeByteBools(c, res, d);
+  printf("End generating:\n");
+  return res;
+}
+
+int TestDataServer::GetBitBools(int c, int n, char* d) {
+  printf("Generating bit bools:\n");
+  int res = column_servers_[c]->GetBitBools(n, d);
+  ConsumeBitBools(c, res, d);
+  printf("End generating:\n");
+  return res;
+}
+
+void TestDataServer::ConsumeDoubles(int column_index, int number,
+                                    const double* d) {
+  for (int i = 0; i < number; ++i) {
+    printf("C%d: %f\n", column_index, d[i]);
+  }
+}
+
+void TestDataServer::ConsumeInts(int column_index, int number, const int32* d) {
+  for (int i = 0; i < number; ++i) {
+    printf("C%d: %d\n", column_index, d[i]);
+  }
+}
+
+void TestDataServer::ConsumeByteBools(int column_index, int number,
+                                      const bool* d) {
+  for (int i = 0; i < number; ++i) {
+    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
+  }
+}
+
+void TestDataServer::ConsumeBitBools(int column_index, int number,
+                                     const char* d) {
+  int pos = 0;
+  char mask = 1;
+  for (int i = 0; i < number; ++i) {
+    if (!mask) {
+      mask = 1;
+      pos += 1;
+    }
+    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
+    mask <<= 1;
+  }
+}
+
 // Utilities for ColumnMap.
 vector<int> CreateVector(int c1) {
   vector<int> result;
@@ -350,9 +516,11 @@ vector<int> ColumnMap(int query_id) {
 }
 
 Server *CreateServer(int query_id, std::string variant) {
-  ColumnFactory* factory;
   if (variant == "default") {
-    factory = new DefaultColumnFactory();
+    return new RealDataServer(ColumnMap(query_id));
+  } else if (variant == "test") {
+    return new TestDataServer(ColumnMap(query_id));
+  } else {
+    assert(false);
   }
-  return new RealDataServer(ColumnMap(query_id), factory);
 }
