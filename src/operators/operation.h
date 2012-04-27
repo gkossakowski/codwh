@@ -18,113 +18,38 @@
 
 using std::vector;
 
+/** Base from all operations: scan, filter, group by, compute */
 class Operation : public Node {
  protected:
   vector<Column*> cache;
  public:
+  /** Get return types */
   virtual vector<int> getTypes() = 0;
+  /** Pull next chunk of data */
   virtual vector<Column*>* pull() = 0;
-
-  int consume() {
-    vector<Column*>* ptr = pull();
-
-    if (ptr->empty()) {
-      return 0;
-    }
-
-    for (unsigned i = 0 ; i < ptr->size() ; ++i) {
-      (*ptr)[i]->consume(i, Factory::server);
-    }
-
-    return (*ptr)[0]->size;
-  }
-
+  /** consume output at server */
+  int consume();
 };
 
 class ScanOperation : public Operation {
   vector<ColumnProvider*> providers;
  public:
-  ScanOperation(const query::ScanOperation& oper) {
-    int n = oper.column_size();
-    cache = vector<Column*>(n);
-    providers = vector<ColumnProvider*>(n);
-
-    for (int i = 0 ; i < n ; ++i) {
-      providers[i] = Factory::createColumnProvider(
-          oper.column().Get(i), oper.type().Get(i));
-    }
-  }
-
-  vector<Column*>* pull() {
-    for (unsigned i = 0 ; i < providers.size() ; ++i) {
-      cache[i] = providers[i]->pull();
-    }
-    return &cache;
-  }
-
-  vector<int> getTypes() {
-    vector<int> result(providers.size());
-    for (unsigned i = 0 ; i < providers.size() ; ++i) {
-      result[i] = providers[i]->getType();
-    }
-    return result;
-  }
-
-  std::ostream& debugPrint(std::ostream& output) {
-    output << "ScanOperation {";
-    for (unsigned i = 0 ; i < providers.size() ; ++i) {
-      output << *providers[i] << ",\n";
-    }
-    return output << "}\n";
-  }
-
-  ~ScanOperation() {
-    // TODO: free providers
-  }
+  ScanOperation(const query::ScanOperation& oper);
+  vector<Column*>* pull();
+  vector<int> getTypes();
+  std::ostream& debugPrint(std::ostream& output);
+  ~ScanOperation();
 };
 
 class ComputeOperation : public Operation {
   Operation* source;
   vector<Expression*> expressions;
  public:
-  ComputeOperation(const query::ComputeOperation& oper) {
-    source = Factory::createOperation(oper.source());
-
-    int n = oper.expressions_size();
-    expressions = vector<Expression*>(n);
-    cache = vector<Column*>(n);
-
-    vector<int> types = source->getTypes();
-    for (int i = 0 ; i < n ; ++i) {
-      expressions[i] = Factory::createExpression(
-          oper.expressions().Get(i), types);
-    }
-  }
-
-  vector<Column*>* pull() {
-    vector<Column*>* sourceColumns = source->pull();
-    for (unsigned i = 0 ; i < cache.size() ; ++i) {
-      cache[i] = expressions[i]->pull(sourceColumns);
-    }
-    return &cache;
-  }
-
-  vector<int> getTypes() {
-    vector<int> result(expressions.size());
-    for (unsigned i = 0 ; i < expressions.size() ; ++i) {
-      result[i] = expressions[i]->getType();
-    }
-    return result;
-  }
-
-  std::ostream& debugPrint(std::ostream& output) {
-    output << "ComputeOperation { \nsource = " << *source;
-    output << "expressions = ";
-    for (unsigned i = 0 ; i < expressions.size() ; ++i) {
-      output << *expressions[i] << ", ";
-    }
-    return output << "}\n";
-  }
+  ComputeOperation(const query::ComputeOperation& oper);
+  vector<Column*>* pull();
+  vector<int> getTypes();
+  std::ostream& debugPrint(std::ostream& output);
+  ~ComputeOperation();
 };
 
 class FilterOperation : public Operation {
@@ -132,45 +57,11 @@ class FilterOperation : public Operation {
   Expression* condition;
   vector<Column*> result;
  public:
-  FilterOperation(const query::FilterOperation& oper) {
-    source = Factory::createOperation(oper.source());
-    vector<int> types = source->getTypes();
-    result = vector<Column*>(types.size());
-    condition = Factory::createExpression(oper.expression(), types);
-
-    for (unsigned i = 0 ; i < result.size() ; ++i) {
-      result[i] = Factory::createColumnFromType(types[i]);
-    }
-  }
-
-  vector<Column*>* pull() {
-    vector<Column*>* sourceColumns = source->pull();
-    Column* cond = condition->pull(sourceColumns);
-
-    if (sourceColumns->empty()) {
-      return sourceColumns;
-    }
-
-    for (unsigned k = 0 ; k < result.size() ; ++k) {
-      (*sourceColumns)[k]->filter(cond, result[k]);
-    }
-
-    if (result[0]->size == 0 && (*sourceColumns)[0]->size > 0) {
-      // No results, reapeat
-      return pull();
-    }
-
-    return &result;
-  }
-
-  std::ostream& debugPrint(std::ostream& output) {
-    output << "FilterOperation { source =" << *source;
-    return output << "condition = " << *condition << "}\n";
-  }
-
-  vector<int> getTypes() {
-    return source->getTypes();
-  }
+  FilterOperation(const query::FilterOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+  ~FilterOperation();
 };
 
 typedef std::tr1::unordered_map<Key, Value, KeyHash, KeyEq> MapType;
@@ -182,69 +73,11 @@ class GroupByOperation : public Operation {
   MapType* m;
   MapType::iterator it;
  public:
-  GroupByOperation(const query::GroupByOperation& oper) {
-    m = NULL;
-    source = Factory::createOperation(oper.source());
-
-    groupByColumn = vector<int>(oper.group_by_column_size());
-    for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
-      groupByColumn[i] = oper.group_by_column().Get(i);
-    }
-
-    aggregations = vector<int>(oper.aggregations_size());
-    for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
-      query::Aggregation agr = oper.aggregations().Get(i);
-      if (agr.type() == query::Aggregation::SUM) {
-        aggregations[i] = agr.aggregated_column();
-      } else if (agr.type() == query::Aggregation::COUNT) {
-        aggregations[i] = -1;
-      } else {
-        assert(false);
-      }
-    }
-
-    vector<int> types = getTypes();
-    cache = vector<Column*>(types.size());
-    for (unsigned int i = 0 ; i < cache.size() ; ++i) {
-      cache[i] = Factory::createColumnFromType(types[i]);
-    }
-  }
-
+  GroupByOperation(const query::GroupByOperation& oper);
   vector<Column*>* pull();
-
-  std::ostream& debugPrint(std::ostream& output) {
-    output << "GroupByOperation { source = " << *source;
-    output << "columns = ";
-    for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
-      output << groupByColumn[i] << ",";
-    }
-    output << "\naggregations = ";
-    for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
-      output << aggregations[i] << ",";
-    }
-    return output << "}\n";
-  }
-
-  vector<int> getTypes() {
-    vector<int> sourceTypes = source->getTypes();
-    vector<int> result;
-    for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
-      result.push_back(sourceTypes[groupByColumn[i]]);
-    }
-    for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
-      if (aggregations[i] == -1) {
-        result.push_back(query::ScanOperation_Type_INT);
-      } else {
-        int type = sourceTypes[aggregations[i]];
-        if (type == query::ScanOperation_Type_BOOL) {
-          result.push_back(query::ScanOperation_Type_INT);
-        } else {
-          result.push_back(type);
-        }
-      }
-    }
-    return result;
-  }
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+  ~GroupByOperation();
 };
 
 #endif // OPERATION_H
