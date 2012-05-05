@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		313407B415559B72001E1FD8 /* server_real.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31363BB81545C3FB00CE05DD /* server_real.cc */; };
 		31363BC01545C3FB00CE05DD /* main.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31363BA71545C3FB00CE05DD /* main.cc */; };
 		31363BC21545C3FB00CE05DD /* factory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31363BAC1545C3FB00CE05DD /* factory.cc */; };
 		31363BC31545C3FB00CE05DD /* groupby.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31363BAE1545C3FB00CE05DD /* groupby.cc */; };
 		31363C0015488A3900CE05DD /* libprotobuf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 31363BFF15488A3900CE05DD /* libprotobuf.dylib */; };
-		31363C021548911000CE05DD /* server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31363BBA1545C3FB00CE05DD /* server.cc */; };
 		31363C0C1548965600CE05DD /* operations.pb.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31363C0A1548965600CE05DD /* operations.pb.cc */; };
+		31BB04191555AD2700900E35 /* node.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31BB04181555AD2700900E35 /* node.cc */; };
+		31BB041C1555AD8200900E35 /* operation.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31BB041B1555AD8200900E35 /* operation.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,10 +46,11 @@
 		31363BB51545C3FB00CE05DD /* server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server.cc; sourceTree = "<group>"; };
 		31363BB61545C3FB00CE05DD /* server.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = server.h; sourceTree = "<group>"; };
 		31363BB81545C3FB00CE05DD /* server_real.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server_real.cc; sourceTree = "<group>"; };
-		31363BBA1545C3FB00CE05DD /* server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = server.cc; sourceTree = "<group>"; };
 		31363BFF15488A3900CE05DD /* libprotobuf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libprotobuf.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk/usr/local/lib/libprotobuf.dylib; sourceTree = DEVELOPER_DIR; };
 		31363C0A1548965600CE05DD /* operations.pb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = operations.pb.cc; sourceTree = "<group>"; };
 		31363C0B1548965600CE05DD /* operations.pb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = operations.pb.h; sourceTree = "<group>"; };
+		31BB04181555AD2700900E35 /* node.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = node.cc; sourceTree = "<group>"; };
+		31BB041B1555AD8200900E35 /* operation.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = operation.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,7 +92,6 @@
 				31363BA91545C3FB00CE05DD /* operators */,
 				31363BB21545C3FB00CE05DD /* proto */,
 				31363BB41545C3FB00CE05DD /* server */,
-				31363BBA1545C3FB00CE05DD /* server.cc */,
 			);
 			name = src;
 			path = ../src;
@@ -98,6 +100,8 @@
 		31363BA91545C3FB00CE05DD /* operators */ = {
 			isa = PBXGroup;
 			children = (
+				31BB041B1555AD8200900E35 /* operation.cc */,
+				31BB04181555AD2700900E35 /* node.cc */,
 				31363BAA1545C3FB00CE05DD /* column.h */,
 				31363BAB1545C3FB00CE05DD /* expression.h */,
 				31363BAC1545C3FB00CE05DD /* factory.cc */,
@@ -188,11 +192,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				31363C021548911000CE05DD /* server.cc in Sources */,
 				31363BC01545C3FB00CE05DD /* main.cc in Sources */,
 				31363BC21545C3FB00CE05DD /* factory.cc in Sources */,
 				31363BC31545C3FB00CE05DD /* groupby.cc in Sources */,
 				31363C0C1548965600CE05DD /* operations.pb.cc in Sources */,
+				313407B415559B72001E1FD8 /* server_real.cc in Sources */,
+				31BB04191555AD2700900E35 /* node.cc in Sources */,
+				31BB041C1555AD8200900E35 /* operation.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
