@@ -437,19 +437,24 @@ int TestDataServer::GetBitBools(int c, int n, char* d) {
 
 void TestDataServer::ConsumeDoubles(int column_index, int number,
                                     const double* d) {
+  printf("Consuming doubles:\n");
   for (int i = 0; i < number; ++i) {
     printf("C%d: %f\n", column_index, d[i]);
   }
+  printf("End consuming\n");
 }
 
 void TestDataServer::ConsumeInts(int column_index, int number, const int32* d) {
+  printf("Consuming ints:\n");
   for (int i = 0; i < number; ++i) {
     printf("C%d: %d\n", column_index, d[i]);
   }
+  printf("End consuming\n");
 }
 
 void TestDataServer::ConsumeByteBools(int column_index, int number,
                                       const bool* d) {
+  printf("Consuming byte bools:\n");
   for (int i = 0; i < number; ++i) {
     printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
   }
@@ -457,6 +462,7 @@ void TestDataServer::ConsumeByteBools(int column_index, int number,
 
 void TestDataServer::ConsumeBitBools(int column_index, int number,
                                      const char* d) {
+  printf("Consuming bit bools:\n");
   int pos = 0;
   char mask = 1;
   for (int i = 0; i < number; ++i) {
@@ -467,6 +473,7 @@ void TestDataServer::ConsumeBitBools(int column_index, int number,
     printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
     mask <<= 1;
   }
+  printf("End consuming\n");
 }
 
 // Utilities for ColumnMap.
