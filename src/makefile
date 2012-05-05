@@ -19,7 +19,7 @@ build/groupby.o: operators/groupby.cc operators/operation.h
 	mkdir -p build/
 	${CC} -c -o $@ $<
 
-build/server.o: server.cc server/server.h
+build/server.o: server/server_real.cc server/server.h
 	mkdir -p build/
 	${CC} -c -o $@ $<
 
