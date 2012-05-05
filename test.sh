@@ -4,6 +4,11 @@ TEST_EXPECTED="$(pwd)/test-expected"
 TEST_ACTUAL="$(pwd)/test-actual"
 QUERIES="$(pwd)/queries"
 
+# ANSI codes
+A_BOLD="\033[1m"
+A_RESET="\033[0m"
+A_RED="\033[31m"
+
 mkdir -p "$TEST_ACTUAL"
 
 function printOutput() {
@@ -12,5 +17,6 @@ function printOutput() {
 
 for i in {1..6}; do
   ($CODWH_BIN --server test $i $QUERIES/q$i.ascii > "$TEST_ACTUAL/q$i") || { printOutput $i; echo -e "\n"; }
-  diff "$TEST_EXPECTED/q$i" "$TEST_ACTUAL/q$i" || { echo -e "\n Test($i) FAILED\n"; exit 1; }
+  diff "$TEST_EXPECTED/q$i" "$TEST_ACTUAL/q$i" || { echo -e "\n Test($i) ${A_RED}FAILED${A_RESET}\n"; exit 1; }
 done
+echo -e "All tests ${A_BOLD}PASSED${A_RESET}"
