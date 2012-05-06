@@ -1,0 +1,30 @@
+Generating bit bools:
+Consuming bit bools:
+C0: FALSE
+C0: FALSE
+C0: FALSE
+C0: TRUE
+C0: TRUE
+C0: FALSE
+C0: FALSE
+C0: FALSE
+C0: TRUE
+C0: TRUE
+End consuming
+End generating:
+Generating bit bools:
+Consuming bit bools:
+End consuming
+End generating:
+Consuming bit bools:
+C0: FALSE
+C0: TRUE
+End consuming
+Consuming ints:
+C1: 6
+C1: 4
+End consuming
+Consuming bit bools:
+End consuming
+Consuming ints:
+End consuming
