@@ -15,7 +15,7 @@ function printOutput() {
   cat "$TEST_ACTUAL/q$1"
 }
 
-for i in {1..6}; do
+for i in {1..7}; do
   ($CODWH_BIN --server test $i $QUERIES/q$i.ascii > "$TEST_ACTUAL/q$i") || { printOutput $i; echo -e "\n"; }
   diff "$TEST_EXPECTED/q$i" "$TEST_ACTUAL/q$i" || { echo -e "\n Test($i) ${A_RED}FAILED${A_RESET}\n"; exit 1; }
 done
