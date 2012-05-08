@@ -38,7 +38,7 @@ int main(int args, char** argv) {
   desc.add_options()
       ("help", "produce help message")
       ("tree", "display query tree instead of running it")
-      ("server", po::value<string>(&server)->default_value("default"), "choose server you want: test, default")
+      ("server", po::value<string>(&server)->default_value("default"), "choose server you want: test, default, perf")
   ;
 
   po::options_description hidden("Hidden options");

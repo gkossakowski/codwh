@@ -9,7 +9,6 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include <sys/time.h>
 #include "server.h"
 
 using ::std::min;
@@ -82,9 +81,6 @@ class RealDataServer : public Server {
   int GetByteBools(int column_index, int number, bool* destination);
   int GetBitBools(int column_index, int number, char* destination);
 
-  // The Consume methods printf the output to screen. This is useful for
-  // correctness checking, for running benchmarks you should likely redefine
-  // them to do nothing.
   void ConsumeDoubles(int column_index, int number, const double* destination);
   void ConsumeInts(int column_index, int number, const int32* destination);
   void ConsumeByteBools(int column_index, int number, const bool* destination);
@@ -105,8 +101,6 @@ class DoubleColumnServer : public ColumnServer {
   }
 
   int GetDoubles(int number, double *destination) {
-    //printf("SERVING %d to %d, zoom %d, normalcy %s\n",
-    //       low_range_, high_range_, zoom_range_, normal_ ? "TRUE" : "FALSE");
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
       destination[i] = Generate();
@@ -142,8 +136,6 @@ class IntColumnServer : public ColumnServer {
   }
 
   int GetInts(int number, int *destination) {
-    //printf("SERVING %d to %d, normalcy %s\n",
-    //       low_range_, high_range_, normal_ ? "TRUE" : "FALSE");
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
       destination[i] = Generate();
@@ -174,7 +166,6 @@ class BoolColumnServer : public ColumnServer {
   }
 
   int GetByteBools(int number, bool *destination) {
-    //printf("SERVING probability %d\n", probability_);
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
       destination[i] = Generate();
@@ -183,7 +174,6 @@ class BoolColumnServer : public ColumnServer {
   }
 
   virtual int GetBitBools(int number, char* destination) {
-    //printf("SERVING probability %d\n", probability_);
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
       destination[i / 8] |= (Generate() << (i & 7));
@@ -226,17 +216,13 @@ RealDataServer::~RealDataServer() {
 
 int RealDataServer::GetDoubles(int c, int n, double* d) {
   double res = column_servers_[c]->GetDoubles(n, d);
-  printf("Generating doubles:\n");
   ConsumeDoubles(c, res, d);
-  printf("End generating:\n");
   return res;
 }
 
 int RealDataServer::GetInts(int c, int n, int32* d) {
   int res = column_servers_[c]->GetInts(n, d);
-  printf("Generating int:\n");
   ConsumeInts(c, res, d);
-  printf("End generating:\n");
   return res;
 }
 
@@ -249,38 +235,15 @@ int RealDataServer::GetBitBools(int c, int n, char* d) {
 }
 
 void RealDataServer::ConsumeDoubles(int column_index, int number,
-                                  const double* d) {
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %f\n", column_index, d[i]);
-  }
-}
+                                  const double* d) { }
 
-void RealDataServer::ConsumeInts(int column_index, int number, const int32* d) {
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %d\n", column_index, d[i]);
-  }
-}
+void RealDataServer::ConsumeInts(int column_index, int number, const int32* d) { }
 
 void RealDataServer::ConsumeByteBools(int column_index, int number,
-                                    const bool* d) {
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
-  }
-}
+                                    const bool* d) { }
 
 void RealDataServer::ConsumeBitBools(int column_index, int number,
-                                   const char* d) {
-  int pos = 0;
-  char mask = 1;
-  for (int i = 0; i < number; ++i) {
-    if (!mask) {
-      mask = 1;
-      pos += 1;
-    }
-    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
-    mask <<= 1;
-  }
-}
+                                   const char* d) { }
 
 // TestDataServer
 
@@ -297,9 +260,6 @@ public:
   int GetByteBools(int column_index, int number, bool* destination);
   int GetBitBools(int column_index, int number, char* destination);
 
-  // The Consume methods printf the output to screen. This is useful for
-  // correctness checking, for running benchmarks you should likely redefine
-  // them to do nothing.
   void ConsumeDoubles(int column_index, int number, const double* destination);
   void ConsumeInts(int column_index, int number, const int32* destination);
   void ConsumeByteBools(int column_index, int number, const bool* destination);
@@ -406,175 +366,38 @@ TestDataServer::~TestDataServer() {
 
 int TestDataServer::GetDoubles(int c, int n, double* d) {
   double res = column_servers_[c]->GetDoubles(n, d);
-  printf("Generating doubles:\n");
   ConsumeDoubles(c, res, d);
-  printf("End generating:\n");
   return res;
 }
 
 int TestDataServer::GetInts(int c, int n, int32* d) {
   int res = column_servers_[c]->GetInts(n, d);
-  printf("Generating int:\n");
   ConsumeInts(c, res, d);
-  printf("End generating:\n");
   return res;
 }
 
 int TestDataServer::GetByteBools(int c, int n, bool* d) {
-  printf("Generating byte bools:\n");
   int res = column_servers_[c]->GetByteBools(n, d);
   ConsumeByteBools(c, res, d);
-  printf("End generating:\n");
   return res;
 }
 
 int TestDataServer::GetBitBools(int c, int n, char* d) {
-  printf("Generating bit bools:\n");
   int res = column_servers_[c]->GetBitBools(n, d);
   ConsumeBitBools(c, res, d);
-  printf("End generating:\n");
   return res;
 }
 
 void TestDataServer::ConsumeDoubles(int column_index, int number,
-                                    const double* d) {
-  printf("Consuming doubles:\n");
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %f\n", column_index, d[i]);
-  }
-  printf("End consuming\n");
-}
+                                    const double* d) { }
 
-void TestDataServer::ConsumeInts(int column_index, int number, const int32* d) {
-  printf("Consuming ints:\n");
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %d\n", column_index, d[i]);
-  }
-  printf("End consuming\n");
-}
+void TestDataServer::ConsumeInts(int column_index, int number, const int32* d) { }
 
 void TestDataServer::ConsumeByteBools(int column_index, int number,
-                                      const bool* d) {
-  printf("Consuming byte bools:\n");
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
-  }
-}
+                                      const bool* d) { }
 
 void TestDataServer::ConsumeBitBools(int column_index, int number,
-                                     const char* d) {
-  printf("Consuming bit bools:\n");
-  int pos = 0;
-  char mask = 1;
-  for (int i = 0; i < number; ++i) {
-    if (!mask) {
-      mask = 1;
-      pos += 1;
-    }
-    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
-    mask <<= 1;
-  }
-  printf("End consuming\n");
-}
-
-// PerfDataServer
-
-class PerfDataServer : public Server {
- public:
-  // The column_types vector should
-  // contain types of columns - if column_types[i] = j, then the i-th
-  // (0-indexed) column of the input is of type j (where 1 means int, 2 means
-  // double and 3 means bool).
-  PerfDataServer(const vector<int> &column_types);
-  ~PerfDataServer();
-  int GetDoubles(int column_index, int number, double* destination);
-  int GetInts(int column_index, int number, int32* destination);
-  int GetByteBools(int column_index, int number, bool* destination);
-  int GetBitBools(int column_index, int number, char* destination);
-
-  // The Consume methods do nothing
-  void ConsumeDoubles(int column_index, int number, const double* destination);
-  void ConsumeInts(int column_index, int number, const int32* destination);
-  void ConsumeByteBools(int column_index, int number, const bool* destination);
-  void ConsumeBitBools(int column_index, int number, const char* destination);
-
- private:
-  vector<ColumnServer *> column_servers_;
-  struct timeval time_started_;
-};
-
-PerfDataServer::PerfDataServer(const vector<int> &column_types) {
-  int query_size = 20000000;
-  vector<int>::const_iterator it;
-  for (it = column_types.begin(); it != column_types.end(); ++it) {
-    switch(*it) {
-      case 1: column_servers_.push_back(new IntColumnServer(query_size));
-              break;
-      case 2: column_servers_.push_back(new DoubleColumnServer(query_size));
-              break;
-      case 3: column_servers_.push_back(new BoolColumnServer(query_size));
-              break;
-      default: assert(false);
-    }
-  }
-
-  // Timer
-  gettimeofday(&time_started_, NULL);
-}
-
-PerfDataServer::~PerfDataServer() {
-  vector<ColumnServer *>::iterator it;
-  for (it = column_servers_.begin(); it != column_servers_.end(); ++it) {
-    delete *it;
-  }
-
-  // Destroy timer
-  struct timeval time_finished;
-  gettimeofday(&time_finished, NULL);
-  long sec = time_finished.tv_sec - time_started_.tv_sec;
-  long msec = (time_finished.tv_usec - time_started_.tv_usec)/1000;
-  if(msec < 0){
-      msec += 1000;
-      sec  -= 1;
-  }
-  printf("%ld.%04ld\n", sec, msec);
-}
-
-int PerfDataServer::GetDoubles(int c, int n, double* d) {
-  double res = column_servers_[c]->GetDoubles(n, d);
-  ConsumeDoubles(c, res, d);
-  return res;
-}
-
-int PerfDataServer::GetInts(int c, int n, int32* d) {
-  int res = column_servers_[c]->GetInts(n, d);
-  ConsumeInts(c, res, d);
-  return res;
-}
-
-int PerfDataServer::GetByteBools(int c, int n, bool* d) {
-  return column_servers_[c]->GetByteBools(n, d);
-}
-
-int PerfDataServer::GetBitBools(int c, int n, char* d) {
-  return column_servers_[c]->GetBitBools(n, d);
-}
-
-void PerfDataServer::ConsumeDoubles(int column_index, int number,
-                                  const double* d) {
-}
-
-void PerfDataServer::ConsumeInts(int column_index, int number, const int32* d) {
-}
-
-void PerfDataServer::ConsumeByteBools(int column_index, int number,
-                                    const bool* d) {
-}
-
-void PerfDataServer::ConsumeBitBools(int column_index, int number,
-                                   const char* d) {
-}
-
+                                     const char* d) { }
 
 // Utilities for ColumnMap.
 vector<int> CreateVector(int c1) {
@@ -629,8 +452,6 @@ Server *CreateServer(int query_id, std::string variant) {
     return new RealDataServer(ColumnMap(query_id));
   } else if (variant == "test") {
     return new TestDataServer(ColumnMap(query_id));
-  } else if (variant == "perf") {
-    return new PerfDataServer(ColumnMap(query_id));
   } else {
     assert(false);
   }
