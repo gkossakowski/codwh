@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <cstring>
 #include <sys/time.h>
 #include "server.h"
 
