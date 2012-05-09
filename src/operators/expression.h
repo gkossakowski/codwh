@@ -602,10 +602,50 @@ class ExpressionIf : public Expression {
     condition(cond), left(l), right(r) { }
   Column* pull(vector<Column*>* sources) {
     Column* cond = condition->pull(sources);
+    unsigned char* cT = (unsigned char*) static_cast<ColumnChunk<char>*>(cond)->chunk;
+    result.size = cond->size;
+    int resultsInBytes = result.size / 8;
+
+    // non empty
+    if (result.size == 0) {
+      return &result;
+    }
+
+    // check if whole block has one value
+    if (cT[0] & 1) {
+      for (int i = 0 ; i < resultsInBytes ; ++i) {
+        if (cT[i] != 0xff) {
+          goto has_true_and_false;
+        }
+      }
+      for (int i = resultsInBytes * 8 ; i < result.size ; ++i) {
+        if ((cT[i / 8] & (1 << (i & 7))) == 0) {
+          goto has_true_and_false;
+        }
+      }
+
+      Column* a = left->pull(sources);
+      return a;
+    } else {
+      for (int i = 0 ; i < resultsInBytes ; ++i) {
+        if (cT[i] != 0x00) {
+          goto has_true_and_false;
+        }
+      }
+      for (int i = resultsInBytes * 8 ; i < result.size ; ++i) {
+        if (cT[i / 8] & (1 << (i & 7))) {
+          goto has_true_and_false;
+        }
+      }
+
+      Column* b = right->pull(sources);
+      return b;
+    }
+
+has_true_and_false:
+
     Column* a = left->pull(sources);
     Column* b = right->pull(sources);
-    result.size = a->size;
-    unsigned char* cT = (unsigned char*) static_cast<ColumnChunk<char>*>(cond)->chunk;
     T* aT = static_cast<ColumnChunk<T>*>(a)->chunk;
     T* bT = static_cast<ColumnChunk<T>*>(b)->chunk;
     T* target = &result.chunk[0];
