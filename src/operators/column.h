@@ -5,6 +5,8 @@
 #define COLUMN_H
 
 #include <cassert>
+
+#include "filter.h"
 #include "factory.h"
 #include "global.h"
 
@@ -36,14 +38,12 @@ class ColumnChunk : public Column {
     ColumnChunk<char>* condition = static_cast<ColumnChunk<char>*>(cond);
     ColumnChunk<T>* result = static_cast<ColumnChunk<T>*>(res);
 
-    char* cT = condition->chunk;
+    unsigned char* cT = (unsigned char*) condition->chunk;
     T* target = result->chunk;
 
     int rest = 0;
-    for (int i = 0 ; i < size ; ++i) {
-      if (cT[i / 8] & (1 << (i & 7))) {
-        target[rest++] = chunk[i];
-      }
+    for (int i = 0 ; i < size ; i += 8) {
+      rest += filterPrimitive(target, chunk + i, cT[i / 8], rest);
     }
 
     result->size = rest;
