@@ -39,10 +39,46 @@ double normal() {
 
 }  // namespace
 
+// Stores generated data
+template<class T>
+class ColumnCache {
+ public:
+  ColumnCache() {
+    array = NULL;
+  }
+
+  void Init(int query_size) {
+    assert(array == NULL);
+    array = new T[query_size];
+    pos = 0;
+    array_size = query_size;
+  }
+
+  void Copy(T* destination, int number) {
+    memcpy(destination, array + pos, number * sizeof(*destination));
+    pos += number;
+  }
+
+  T& operator[](int id) {
+    return array[id];
+  }
+
+  ~ColumnCache() {
+    if (array != NULL) {
+      delete[] array;
+    }
+  }
+
+ private:
+  T* array;
+  int pos;
+  int array_size;
+};
+
 // A class serving data from a single column.
 class ColumnServer {
  public:
-  ColumnServer(int query_size) : rows_left_(query_size) {}
+  ColumnServer(int query_size) : rows_left(query_size) {}
 
   virtual int GetDoubles(int number, double* destination) {
     assert(false);
@@ -59,15 +95,14 @@ class ColumnServer {
 
  protected:
   int Serve(int N) {
-    if (N >= rows_left_) {
-      N = rows_left_;
+    if (N >= rows_left) {
+      N = rows_left;
     }
-    rows_left_ -= N;
+    rows_left -= N;
     return N;
   }
 
- private:
-  int rows_left_;
+  int rows_left;
 };
 
 class RealDataServer : public Server {
@@ -103,19 +138,22 @@ class DoubleColumnServer : public ColumnServer {
         high_range_(low_range_ + random_power_of_two() % (1 << 30)),
         zoom_range_(random_power_of_two()),
         normal_(random(0, 1)) {
+    cache.Init(query_size);
+    for (int i = 0; i < query_size; ++i) {
+      cache[i] = Generate();
+    }
   }
 
   int GetDoubles(int number, double *destination) {
     //printf("SERVING %d to %d, zoom %d, normalcy %s\n",
     //       low_range_, high_range_, zoom_range_, normal_ ? "TRUE" : "FALSE");
     number = Serve(number);
-    for (int i = 0; i < number; ++i) {
-      destination[i] = Generate();
-    }
+    cache.Copy(destination, number);
     return number;
   }
 
  private:
+  ColumnCache<double> cache;
   double Generate() {
     if (!normal_) {
       return (double) random(low_range_, high_range_) /
@@ -140,19 +178,22 @@ class IntColumnServer : public ColumnServer {
         low_range_(random_power_of_two() % (1 << 30)),
         high_range_(low_range_ + min(random_power_of_two(), 1 << 30)),
         normal_(random(0, 1)) {
+    cache.Init(query_size);
+    for (int i = 0; i < query_size; ++i) {
+      cache[i] = Generate();
+    }
   }
 
   int GetInts(int number, int *destination) {
     //printf("SERVING %d to %d, normalcy %s\n",
     //       low_range_, high_range_, normal_ ? "TRUE" : "FALSE");
     number = Serve(number);
-    for (int i = 0; i < number; ++i) {
-      destination[i] = Generate();
-    }
+    cache.Copy(destination, number);
     return number;
   }
 
  private:
+  ColumnCache<int> cache;
   double Generate() {
     if (!normal_) {
       return random(low_range_, high_range_);
@@ -172,6 +213,12 @@ class BoolColumnServer : public ColumnServer {
   BoolColumnServer(int query_size)
       : ColumnServer(query_size),
         probability_(random(0, 100)) {
+    cache.Init((query_size + 7) / 8);
+    for (int i = 0; i < query_size; ++i) {
+      if (i % 8 == 0)
+        cache[i / 8] = 0;
+      cache[i / 8] |= (Generate() << (i & 7));
+    }
   }
 
   int GetByteBools(int number, bool *destination) {
@@ -186,13 +233,12 @@ class BoolColumnServer : public ColumnServer {
   virtual int GetBitBools(int number, char* destination) {
     //printf("SERVING probability %d\n", probability_);
     number = Serve(number);
-    for (int i = 0; i < number; ++i) {
-      destination[i / 8] |= (Generate() << (i & 7));
-    }
+    cache.Copy(destination, (number + 7) / 8);
     return number;
   }
 
  private:
+  ColumnCache<char> cache;
   char Generate() {
     return (random(0, 99) < probability_);
   }
@@ -486,7 +532,7 @@ class PerfDataServer : public Server {
   // contain types of columns - if column_types[i] = j, then the i-th
   // (0-indexed) column of the input is of type j (where 1 means int, 2 means
   // double and 3 means bool).
-  PerfDataServer(const vector<int> &column_types);
+  PerfDataServer(const vector<int> &column_types, bool save_memory = false);
   ~PerfDataServer();
   int GetDoubles(int column_index, int number, double* destination);
   int GetInts(int column_index, int number, int32* destination);
@@ -504,8 +550,11 @@ class PerfDataServer : public Server {
   struct timeval time_started_;
 };
 
-PerfDataServer::PerfDataServer(const vector<int> &column_types) {
+PerfDataServer::PerfDataServer(const vector<int> &column_types, bool save_memory) {
   int query_size = 20000000;
+  if (save_memory) {
+    query_size /= 2;
+  }
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {
     switch(*it) {
@@ -631,7 +680,8 @@ Server *CreateServer(int query_id, std::string variant) {
   } else if (variant == "test") {
     return new TestDataServer(ColumnMap(query_id));
   } else if (variant == "perf") {
-    return new PerfDataServer(ColumnMap(query_id));
+    bool save_memory = (query_id == 7);
+    return new PerfDataServer(ColumnMap(query_id), save_memory);
   } else {
     assert(false);
   }
