@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <pmmintrin.h>
+#include <smmintrin.h>
 
 #include "column.h"
 
@@ -267,14 +267,15 @@ class ExpressionMultiply : public Expression2<T> {
 template<>
 inline void
 ExpressionMultiply<int>::pullInternal(Column* a, Column* b) {
-  int* aT = ((ColumnChunk<int>*) a)->chunk;
-  int* bT = ((ColumnChunk<int>*) b)->chunk;
-  int* target = cache.chunk;
+  __m128i* aT = (__m128i*) ((ColumnChunk<int>*) a)->chunk;
+  __m128i* bT = (__m128i*) ((ColumnChunk<int>*) b)->chunk;
+  __m128i* target = (__m128i*) cache.chunk;
 
   cache.size = a->size;
+  int n = (cache.size + 3) / 4;
 
-  for (int i = 0 ; i < cache.size ; ++i) {
-    target[i] = aT[i] * bT[i];
+  for (int i = 0 ; i < n ; ++i) {
+    target[i] = _mm_mullo_epi32(aT[i], bT[i]);
   }
 }
 
