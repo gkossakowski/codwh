@@ -17,8 +17,13 @@ function printOutput() {
 
 echo -n "" > perf_results
 
-for i in {1..9}; do
-  echo Test $i
+if [ -z "$1" ]
+  then ALL_TESTS=`seq 12`
+  else ALL_TESTS="$1"
+fi
+
+for i in $ALL_TESTS; do
+  echo "Test $i"
   $CODWH_BIN --server perf $i $QUERIES/q$i.ascii | tee -a perf_results
   $CODWH_BIN --server perf $i $QUERIES/q$i.ascii | tee -a perf_results
   $CODWH_BIN --server perf $i $QUERIES/q$i.ascii | tee -a perf_results
