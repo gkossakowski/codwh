@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <pmmintrin.h>
 
 #include "column.h"
 
@@ -149,14 +150,15 @@ class ExpressionAdd : public Expression2<T> {
 template<>
 inline void
 ExpressionAdd<int>::pullInternal(Column* a, Column* b) {
-  int* aT = ((ColumnChunk<int>*) a)->chunk;
-  int* bT = ((ColumnChunk<int>*) b)->chunk;
-  int* target = cache.chunk;
+  __m128i* aT = (__m128i*) ((ColumnChunk<int>*) a)->chunk;
+  __m128i* bT = (__m128i*) ((ColumnChunk<int>*) b)->chunk;
+  __m128i* target = (__m128i*) cache.chunk;
 
   cache.size = a->size;
+  int n = (cache.size + 3) / 4;
 
-  for (int i = 0 ; i < cache.size ; ++i) {
-    target[i] = aT[i] + bT[i];
+  for (int i = 0 ; i < n ; ++i) {
+    target[i] = _mm_add_epi32(aT[i], bT[i]);
   }
 }
 
@@ -376,13 +378,13 @@ class ExpressionOr : public Expression2<char> {
   ExpressionOr(Expression* l, Expression* r): Expression2<char>(l, r) { }
   void pullInternal(Column* a, Column* b) {
     cache.size = a->size;
-    char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
-    char* bT = static_cast<ColumnChunk<char>*>(b)->chunk;
-    char* target = cache.chunk;
-    int sizeInBytes = (cache.size + 7) / 8;
+    __m128d* aT = (__m128d*) static_cast<ColumnChunk<char>*>(a)->chunk;
+    __m128d* bT = (__m128d*) static_cast<ColumnChunk<char>*>(b)->chunk;
+    __m128d* target = (__m128d*) cache.chunk;
+    int sizeIn128 = (cache.size + 127) / 128;
 
-    for (int i = 0 ; i < sizeInBytes ; ++i) {
-      target[i] = aT[i] | bT[i];
+    for (int i = 0 ; i < sizeIn128 ; ++i) {
+      target[i] = _mm_or_pd(aT[i], bT[i]);
     }
   }
 };
@@ -392,13 +394,13 @@ class ExpressionAnd : public Expression2<char> {
   ExpressionAnd(Expression* l, Expression* r): Expression2<char>(l, r) { }
   void pullInternal(Column* a, Column* b) {
     cache.size = a->size;
-    char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
-    char* bT = static_cast<ColumnChunk<char>*>(b)->chunk;
-    char* target = cache.chunk;
-    int sizeInBytes = (cache.size + 7) / 8;
+    __m128d* aT = (__m128d*) static_cast<ColumnChunk<char>*>(a)->chunk;
+    __m128d* bT = (__m128d*) static_cast<ColumnChunk<char>*>(b)->chunk;
+    __m128d* target = (__m128d*) cache.chunk;
+    int sizeIn128 = (cache.size + 127) / 128;
 
-    for (int i = 0 ; i < sizeInBytes ; ++i) {
-      target[i] = aT[i] & bT[i];
+    for (int i = 0 ; i < sizeIn128 ; ++i) {
+      target[i] = _mm_and_pd(aT[i], bT[i]);
     }
   }
 };
@@ -407,11 +409,11 @@ class ExpressionNot : public Expression1<char> {
  public:
   ExpressionNot(Expression* l): Expression1<char>(l) { }
   void pullInternal(Column* a) {
-    char* aT = static_cast<ColumnChunk<char>*>(a)->chunk;
-    char* target = cache.chunk;
-    int sizeInBytes = (cache.size + 7) / 8;
+    int* aT = (int*)static_cast<ColumnChunk<char>*>(a)->chunk;
+    int* target = (int*) cache.chunk;
+    int sizeIn32 = (cache.size + 31) / 32;
 
-    for (int i = 0 ; i < sizeInBytes ; ++i) {
+    for (int i = 0 ; i < sizeIn32 ; ++i) {
       target[i] = ~aT[i];
     }
   }

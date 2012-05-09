@@ -27,7 +27,7 @@ class Column {
 template<class T>
 class ColumnChunk : public Column {
  public:
-  T chunk[DEFAULT_CHUNK_SIZE];
+  T chunk[DEFAULT_CHUNK_SIZE] __attribute__ ((aligned (16)));
   void consume(int column_index, Server* server);
   void fill(any_t* any, int idx);
   void addTo(any_t* any, int idx);
