@@ -9,7 +9,7 @@ LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 all: exec_plan
 
 exec_plan: main.cc ${OBJS}
-	${CC} ${OBJS} ${LIBS} -o $@ $<
+	${CC} ${OBJS} $< ${LIBS} -o $@
 
 build/operators/%.o: operators/%.cc operators/%.h
 	mkdir -p build/operators
