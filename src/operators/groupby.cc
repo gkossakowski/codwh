@@ -72,17 +72,29 @@ GroupByOperation::pull() {
   vector<Column*>* sourceColumns;
 
   if (m == NULL) {
-    m = new MapType();
+    m = new MapType2();
     // collect the data
     do {
       sourceColumns = source->pull();
       int n = (*sourceColumns)[0]->size;
+      // create keys
+      vector<Key2> keys;
+      keys.reserve(n);
+      int cols_n = groupByColumn.size();
+      for (int i = 0; i < n; i++) {
+        keys.push_back(Key2(cols_n));
+      }
+      for (int i = 0 ; i < cols_n ; i++) {
+        for (int j = 0; j < n; j++) {
+          keys[j].appendColumn((*sourceColumns)[groupByColumn[i]], j);
+        }
+      }
       for (int i = 0 ; i < n ; ++i) {
-        Key key(sourceColumns, &groupByColumn, i);  
+        Key2 key = keys[i];
        typeof(m->end()) it = m->find(key);
         if (it == m->end()) {
           // on insert
-          m->insert(MapType::value_type(key, Value(sourceColumns, &aggregations, i)));
+          m->insert(MapType2::value_type(key, Value(sourceColumns, &aggregations, i)));
         } else {
           // on update
           it->second.update(sourceColumns, &aggregations, i);;

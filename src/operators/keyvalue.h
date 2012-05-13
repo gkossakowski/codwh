@@ -5,6 +5,11 @@
 #define KEYVALUE_H
 
 #include "column.h"
+#include <boost/functional/hash.hpp>
+
+class Hashes {
+  
+};
 
 class Key {
  public:
@@ -32,6 +37,43 @@ class Key {
   }
 
   ~Key() {
+    delete[] keys;
+  }
+};
+
+class Key2 {
+public:
+  int n;
+  any_t* keys;
+//  Key2(const Key& clone) {
+//    n = clone.n;
+//    keys = new any_t[n];
+//    memcpy(keys, clone.keys, sizeof(*keys) * n);
+//  }
+  int colIdx;
+  size_t hash;
+  
+  Key2(int n) {
+    this->n = n;
+    colIdx = 0;
+    hash = 0;
+    keys = new any_t[n];
+    memset(keys, 0, sizeof(*keys) * n);
+  }
+  
+  void appendColumn(Column* col, int idx) {
+    col->fill(&keys[colIdx], idx);
+    boost::hash_combine(hash, keys[colIdx].double_);
+    colIdx++;
+  }
+  
+  void putInto(vector<Column*>* result, int idx) const {
+    for (int i = 0 ; i < n ; ++i) {
+      (*result)[i]->take(keys[i], idx);
+    }
+  }
+  
+  ~Key2() {
     delete[] keys;
   }
 };
@@ -88,11 +130,21 @@ typedef struct {
 } KeyHash;
 
 typedef struct {
+  long operator() (const Key2& a) const {
+    return a.hash;
+  }
+} Key2Hash;
+
+typedef struct {
   long operator() (const Key& a, const Key& b) const {
     return a.n == b.n && 0 == memcmp(a.keys, b.keys, a.n * sizeof(any_t));
   }
 } KeyEq;
 
-
+typedef struct {
+  long operator() (const Key2& a, const Key2& b) const {
+    return a.hash == b.hash && a.n == b.n && 0 == memcmp(a.keys, b.keys, a.n * sizeof(any_t));
+  }
+} Key2Eq;
 
 #endif

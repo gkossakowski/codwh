@@ -65,13 +65,14 @@ class FilterOperation : public Operation {
 };
 
 typedef std::tr1::unordered_map<Key, Value, KeyHash, KeyEq> MapType;
+typedef std::tr1::unordered_map<Key2, Value, Key2Hash, Key2Eq> MapType2;
 
 class GroupByOperation : public Operation {
   Operation* source;
   vector<int> groupByColumn;
   vector<int> aggregations; // non negative sum on idx, -1 count
-  MapType* m;
-  MapType::iterator it;
+  MapType2* m;
+  MapType2::iterator it;
  public:
   GroupByOperation(const query::GroupByOperation& oper);
   vector<Column*>* pull();
