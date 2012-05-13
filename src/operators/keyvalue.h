@@ -53,6 +53,14 @@ public:
   int colIdx;
   size_t hash;
   
+  Key2(const Key2& other) {
+      n = other.n;
+      keys = new any_t[n];
+      colIdx = other.colIdx;
+      hash = other.hash;
+      memcpy(keys, other.keys, sizeof(any_t) * n);
+  }
+
   Key2(int n) {
     this->n = n;
     colIdx = 0;
