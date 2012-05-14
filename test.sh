@@ -9,6 +9,8 @@ A_BOLD="\033[1m"
 A_RESET="\033[0m"
 A_RED="\033[31m"
 
+(cd src/ &&  make)
+
 mkdir -p "$TEST_ACTUAL"
 
 function printOutput() {
