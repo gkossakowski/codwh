@@ -1,5 +1,4 @@
-Generating int:
-Consuming ints:
+dump served START
 C0: -5
 C0: -4
 C0: -3
@@ -10,10 +9,6 @@ C0: 1
 C0: 2
 C0: 3
 C0: 4
-End consuming
-End generating:
-Generating int:
-Consuming ints:
 C1: -5
 C1: -4
 C1: -3
@@ -24,9 +19,8 @@ C1: 1
 C1: 2
 C1: 3
 C1: 4
-End consuming
-End generating:
-Consuming ints:
+dump served END
+dump consumed START
 C0: -10
 C0: -8
 C0: -6
@@ -37,14 +31,4 @@ C0: 2
 C0: 4
 C0: 6
 C0: 8
-End consuming
-Generating int:
-Consuming ints:
-End consuming
-End generating:
-Generating int:
-Consuming ints:
-End consuming
-End generating:
-Consuming ints:
-End consuming
+dump consumed END

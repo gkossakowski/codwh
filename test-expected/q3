@@ -1,5 +1,4 @@
-Generating doubles:
-Consuming doubles:
+dump served START
 C0: -4.900000
 C0: -3.900000
 C0: -2.900000
@@ -10,9 +9,8 @@ C0: 1.100000
 C0: 2.100000
 C0: 3.100000
 C0: 4.100000
-End consuming
-End generating:
-Consuming doubles:
+dump served END
+dump consumed START
 C0: 0.463253
 C0: 0.308202
 C0: 0.062703
@@ -23,10 +21,4 @@ C0: -2.350619
 C0: -0.298490
 C0: 0.123458
 C0: 0.344289
-End consuming
-Generating doubles:
-Consuming doubles:
-End consuming
-End generating:
-Consuming doubles:
-End consuming
+dump consumed END

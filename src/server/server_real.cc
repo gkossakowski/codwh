@@ -11,6 +11,7 @@
 #include <string>
 #include <cstring>
 #include <sys/time.h>
+#include <algorithm>
 #include "server.h"
 
 using ::std::min;
@@ -331,13 +332,72 @@ void RealDataServer::ConsumeBitBools(int column_index, int number,
 
 // TestDataServer
 
+class TestValue {
+public:
+  virtual bool operator <(const TestValue& other) const = 0;
+  virtual void print() const = 0;
+};
+
+class DoubleTestValue : public TestValue {
+public:
+  DoubleTestValue(double v) : value(v) {};
+  virtual bool operator <(const TestValue& other) const {
+//    printf("testing if %f < %f = %d\n", value, dynamic_cast<const DoubleTestValue&>(other).value, value < dynamic_cast<const DoubleTestValue&>(other).value);
+   return value < dynamic_cast<const DoubleTestValue&>(other).value;
+  }
+  virtual void print() const {
+    printf("%f", value);
+  }
+private:
+  double value;
+};
+
+class IntTestValue : public TestValue {
+public:
+  IntTestValue(int v) : value(v) {};
+  virtual bool operator <(const TestValue& other) const {
+//    printf("testing if %d < %d = %d\n", value, dynamic_cast<const IntTestValue&>(other).value, value < dynamic_cast<const IntTestValue&>(other).value);
+    return value < dynamic_cast<const IntTestValue&>(other).value;
+  }
+  virtual void print() const {
+    printf("%d", value);
+  }
+private:
+  int value;
+};
+
+class BoolTestValue : public TestValue {
+public:
+  BoolTestValue(bool v) : value(v) {};
+  virtual bool operator <(const TestValue& other) const {
+    return value < dynamic_cast<const BoolTestValue&>(other).value;
+  }
+  virtual void print() const {
+    value ? printf("TRUE") : printf("FALSE");
+  }
+private:
+  bool value;
+};
+
+TestValue* testValue(double x) {
+  return new DoubleTestValue(x);
+}
+
+TestValue* testValue(int x) {
+  return new IntTestValue(x);
+}
+
+TestValue* testValue(bool x) {
+  return new BoolTestValue(x);
+}
+
 class TestDataServer : public Server {
 public:
   // The column_types vector should
   // contain types of columns - if column_types[i] = j, then the i-th
   // (0-indexed) column of the input is of type j (where 1 means int, 2 means
   // double and 3 means bool).
-  TestDataServer(const vector<int> &column_types);
+  TestDataServer(const vector<int> &column_types, bool sort_consumed = false);
   ~TestDataServer();
   int GetDoubles(int column_index, int number, double* destination);
   int GetInts(int column_index, int number, int32* destination);
@@ -354,6 +414,82 @@ public:
 
 private:
   vector<ColumnServer *> column_servers_;
+  vector< vector<TestValue* > > served_;
+  vector< vector<TestValue* > > consumed_;
+  bool sort_consumed;
+  template <class T>
+  void store(int length, const T* s, unsigned int colNumber, vector< vector<TestValue*> >& d) {
+    if (colNumber+1 > d.size())
+      d.resize(colNumber+1);
+    for (int i=0; i<length; i++) {
+      d[colNumber].push_back(testValue(s[i]));
+    }
+  }
+  void storeBits(int length, const char* s, int colNumber, vector< vector<TestValue*> >& d) {
+    int pos = 0;
+    char mask = 1;
+    bool* bools = new bool[length];
+    for (int i = 0; i < length; ++i) {
+      if (!mask) {
+        mask = 1;
+        pos += 1;
+      }
+      bools[i] = (s[pos] & mask);
+      mask <<= 1;
+    }
+    store(length, bools, colNumber, d);
+    delete [] bools;
+  }
+  
+  const vector< vector<TestValue*> > transpose(const vector< vector<TestValue*> >& d) {
+    if (d.size() == 0) {
+      return d;
+    }
+    int n = d.size();
+    int m = d[0].size();
+    vector< vector<TestValue*> > result;
+    for (int i = 0; i < m; i++) {
+      vector<TestValue*> row;
+      for (int j = 0; j < n; j++) {
+        row.push_back(d[j][i]);
+      }
+      result.push_back(row);
+    }
+    return result;
+  }
+  
+  struct sort_deep_st {
+    bool operator() (const vector<TestValue*>& x1, const vector<TestValue*>& x2) const {
+      if (x1.size() != x2.size()) {
+        return x1.size() < x2.size();
+      }
+      for (unsigned int i = 0; i<x1.size(); i++) {
+        TestValue& a = (*x1[i]);
+        TestValue& b = (*x2[i]);
+        if (a < b) {
+          return true;
+        } else if (b < a) {
+          return false;
+        }
+      }
+      // equal
+      return false;
+    }
+  } sort_deep;
+  
+  void dumpStored(const vector< vector<TestValue*> >& d, bool sort = false) {
+    vector< vector<TestValue*> > d2 = d;
+    if (sort) {
+      d2 = transpose(d2);
+      std::sort(d2.begin(), d2.end(), sort_deep);
+      d2 = transpose(d2);
+    }
+    for (unsigned int i=0; i < d2.size(); i++) {
+      for (unsigned int j=0; j < d2[i].size(); j++) {
+        printf("C%d: ", i); d2[i][j]->print(); printf("\n");
+      }
+    }
+  }
 };
 
 class DoubleTestColumnServer : public ColumnServer {
@@ -428,8 +564,9 @@ private:
 };
 
 // TestDataServer implementation.
-TestDataServer::TestDataServer(const vector<int> &column_types) {
+TestDataServer::TestDataServer(const vector<int> &column_types, bool sort_consumed) {
   int query_size = 10;
+  this->sort_consumed = sort_consumed;
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {
     switch(*it) {
@@ -445,6 +582,12 @@ TestDataServer::TestDataServer(const vector<int> &column_types) {
 }
 
 TestDataServer::~TestDataServer() {
+  printf("dump served START\n");
+  dumpStored(served_);
+  printf("dump served END\n");
+  printf("dump consumed START\n");
+  dumpStored(consumed_, sort_consumed);
+  printf("dump consumed END\n");
   vector<ColumnServer *>::iterator it;
   for (it = column_servers_.begin(); it != column_servers_.end(); ++it) {
     delete *it;
@@ -452,76 +595,46 @@ TestDataServer::~TestDataServer() {
 }
 
 int TestDataServer::GetDoubles(int c, int n, double* d) {
-  double res = column_servers_[c]->GetDoubles(n, d);
-  printf("Generating doubles:\n");
-  ConsumeDoubles(c, res, d);
-  printf("End generating:\n");
+  int res = column_servers_[c]->GetDoubles(n, d);
+  store(res, d, c, served_);
   return res;
 }
 
 int TestDataServer::GetInts(int c, int n, int32* d) {
   int res = column_servers_[c]->GetInts(n, d);
-  printf("Generating int:\n");
-  ConsumeInts(c, res, d);
-  printf("End generating:\n");
+  store(res, d, c, served_);
   return res;
 }
 
 int TestDataServer::GetByteBools(int c, int n, bool* d) {
-  printf("Generating byte bools:\n");
   int res = column_servers_[c]->GetByteBools(n, d);
-  ConsumeByteBools(c, res, d);
-  printf("End generating:\n");
+  store(res, d, c, served_);
   return res;
 }
 
 int TestDataServer::GetBitBools(int c, int n, char* d) {
-  printf("Generating bit bools:\n");
   int res = column_servers_[c]->GetBitBools(n, d);
-  ConsumeBitBools(c, res, d);
-  printf("End generating:\n");
+  storeBits(res, d, c, served_);
   return res;
 }
 
 void TestDataServer::ConsumeDoubles(int column_index, int number,
                                     const double* d) {
-  printf("Consuming doubles:\n");
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %f\n", column_index, d[i]);
-  }
-  printf("End consuming\n");
+  store(number, d, column_index, consumed_);
 }
 
 void TestDataServer::ConsumeInts(int column_index, int number, const int32* d) {
-  printf("Consuming ints:\n");
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %d\n", column_index, d[i]);
-  }
-  printf("End consuming\n");
+  store(number, d, column_index, consumed_);
 }
 
 void TestDataServer::ConsumeByteBools(int column_index, int number,
                                       const bool* d) {
-  printf("Consuming byte bools:\n");
-  for (int i = 0; i < number; ++i) {
-    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
-  }
+  store(number, d, column_index, consumed_);
 }
 
 void TestDataServer::ConsumeBitBools(int column_index, int number,
                                      const char* d) {
-  printf("Consuming bit bools:\n");
-  int pos = 0;
-  char mask = 1;
-  for (int i = 0; i < number; ++i) {
-    if (!mask) {
-      mask = 1;
-      pos += 1;
-    }
-    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
-    mask <<= 1;
-  }
-  printf("End consuming\n");
+  storeBits(number, d, column_index, consumed_);
 }
 
 // PerfDataServer
@@ -678,7 +791,10 @@ Server *CreateServer(int query_id, std::string variant) {
   if (variant == "default") {
     return new RealDataServer(ColumnMap(query_id));
   } else if (variant == "test") {
-    return new TestDataServer(ColumnMap(query_id));
+    // if query contains groupby then we should sort output before dumping
+    // to not depend on hashmap ordering
+    bool query_with_groupby = 7 <= query_id && query_id <= 11;
+    return new TestDataServer(ColumnMap(query_id), query_with_groupby);
   } else if (variant == "perf") {
     bool save_memory = (query_id == 7);
     return new PerfDataServer(ColumnMap(query_id), save_memory);
