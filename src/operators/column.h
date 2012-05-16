@@ -24,6 +24,7 @@ class Column {
   virtual void fill(any_t* any, int idx) = 0;
   virtual void addTo(any_t* any, int idx) = 0;
   virtual void take(const any_t& any, int idx) = 0;
+  virtual Column* clone() = 0;
 };
 
 template<class T>
@@ -47,6 +48,12 @@ class ColumnChunk : public Column {
     }
 
     result->size = rest;
+  }
+  Column* clone() {
+    ColumnChunk* result = new ColumnChunk;
+    result->size = size;
+    memcpy(result->chunk, chunk, sizeof(T)*DEFAULT_CHUNK_SIZE);
+    return result;
   }
 };
 

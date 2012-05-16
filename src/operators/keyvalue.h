@@ -9,30 +9,37 @@
 class Key {
  public:
   int n;
-  any_t* keys;
+  vector<Column*>* columnChunks;
+  vector<int>* check;
+  int idx;
   Key(const Key& clone) {
     n = clone.n;
-    keys = new any_t[n];
-    memcpy(keys, clone.keys, sizeof(*keys) * n);
+    columnChunks = clone.columnChunks;
+    check = clone.check;
+    idx = clone.idx;
+    //memcpy(keys, clone.keys, sizeof(*keys) * n);
   }
 
-  Key(vector<Column*>* sources, vector<int>* check, int idx) {
+  Key(vector<Column*>* columnChunks, vector<int>* check, int idx) {
     n = check->size(); //ugly
-    keys = new any_t[n];
-    memset(keys, 0, sizeof(*keys) * n);
-    for (int i = 0 ; i < n ; ++i) {
-      (*sources)[(*check)[i]]->fill(&keys[i], idx);
-    }
+    this->columnChunks = columnChunks;
+    this->check = check;
+    this->idx = idx;
+  }
+  
+  inline const any_t getMember(const int i) const {
+    int colNumber = (*check)[i];
+    any_t any;
+    memset(&any, 0, sizeof(any_t));
+    (*columnChunks)[colNumber]->fill(&any, idx);
+    return any;
   }
 
-  void putInto(vector<Column*>* result, int idx) const {
+  void putInto(vector<Column*>* result, int target_idx) const {
     for (int i = 0 ; i < n ; ++i) {
-      (*result)[i]->take(keys[i], idx);
+      any_t any = getMember(i);
+      (*result)[i]->take(any, target_idx);
     }
-  }
-
-  ~Key() {
-    delete[] keys;
   }
 };
 
@@ -80,7 +87,8 @@ typedef struct {
   long operator() (const Key& a) const {
     long h = 0;
     for (int i = 0 ; i < a.n ; ++i) {
-      unsigned val = *((unsigned*) (a.keys + i)) ^ *(((unsigned*) (a.keys + i)) + 1);
+      any_t any = a.getMember(i);
+      unsigned val = *((unsigned*) (&any)) ^ *(((unsigned*) (&any)) + 1);
       h = ( h << 4 ) ^ ( h >> 28 ) ^ val;
     }
     return h;
@@ -89,7 +97,15 @@ typedef struct {
 
 typedef struct {
   long operator() (const Key& a, const Key& b) const {
-    return a.n == b.n && 0 == memcmp(a.keys, b.keys, a.n * sizeof(any_t));
+    if (a.n != b.n)
+      return false;
+    for (int i =0; i < a.n; i++) {
+      any_t any1 = a.getMember(i);
+      any_t any2 = b.getMember(i);
+      if (memcmp(&any1, &any2, sizeof(any_t) != 0))
+        return false;
+    }
+    return true;
   }
 } KeyEq;
 

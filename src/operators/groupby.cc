@@ -70,15 +70,24 @@ vector<int> GroupByOperation::getTypes() {
 vector<Column*>*
 GroupByOperation::pull() {
   vector<Column*>* sourceColumns;
+  
+  vector< vector<Column*>* > allColumns;
 
   if (m == NULL) {
     m = new MapType();
     // collect the data
     do {
       sourceColumns = source->pull();
+      vector<Column*>* columnChunks = new std::vector<Column*>;
+      int chunksNumber = sourceColumns->size();
+      columnChunks->reserve(chunksNumber);
+      // clone columns
+      for (int i = 0; i < chunksNumber; i++) {
+        columnChunks->push_back((*sourceColumns)[i]->clone());
+      }
       int n = (*sourceColumns)[0]->size;
       for (int i = 0 ; i < n ; ++i) {
-        Key key(sourceColumns, &groupByColumn, i);  
+        Key key(columnChunks, &groupByColumn, i);
        typeof(m->end()) it = m->find(key);
         if (it == m->end()) {
           // on insert
