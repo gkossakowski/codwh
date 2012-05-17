@@ -1,4 +1,5 @@
 src/build/*
 src/database
 src/exec_plan
+src/net_test
 test-actual

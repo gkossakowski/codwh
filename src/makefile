@@ -4,9 +4,14 @@ OBJS=build/proto.o build/server.o \
 		 build/operators/node.o build/groupby.o \
 		 build/operators/factory.o \
 		 build/operators/operation.o
+NET_OBJS=build/node_environment/libnode_environment.a \
+	 	 build/utils/libutils.a \
+	 	 build/netio/libnetio.a
+		 
 LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
+NET_LIBS=${LIBS} -lboost_system-mt -lboost_thread-mt 
 
-all: exec_plan
+all: exec_plan net_test
 
 exec_plan: main.cc ${OBJS}
 	${CC} ${OBJS} $< ${LIBS} -o $@
@@ -29,6 +34,47 @@ build/proto.o: build/proto/operations.pb.cc
 build/proto/operations.pb.cc: proto/operations.proto
 	mkdir -p build/
 	protoc $< --cpp_out build/
+
+net_test: net_test.cc ${NET_OBJS}
+	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
+
+# Netio
+build/netio/network_input.o: netio/network_input.cc netio/network_input.h
+	mkdir -p build/netio
+	${CC} -c -o $@ $<
+
+build/netio/network_output.o: netio/network_output.cc netio/network_output.h
+	mkdir -p build/netio
+	${CC} -c -o $@ $<
+
+build/netio/libnetio.a: build/netio/network_input.o build/netio/network_output.o
+	mkdir -p build/netio
+	ar cru build/netio/libnetio.a build/netio/network_input.o build/netio/network_output.o
+	ranlib build/netio/libnetio.a
+
+# Utils
+build/utils/ip_address.o: utils/ip_address.cc utils/ip_address.h
+	mkdir -p build/utils
+	${CC} -c -o $@ $<
+
+build/utils/libutils.a: build/utils/ip_address.o
+	mkdir -p build/utils
+	ar cru build/utils/libutils.a build/utils/ip_address.o
+	ranlib build/utils/libutils.a
+
+# Node Environment
+build/node_environment/node_environment.o: node_environment/node_environment.cc node_environment/node_environment.h
+	mkdir -p build/node_environment
+	${CC} -c -o $@ $<
+
+build/node_environment/data_server.o: node_environment/data_server.cc node_environment/data_server.h
+	mkdir -p build/node_environment
+	${CC} -c -o $@ $<
+
+build/node_environment/libnode_environment.a: build/node_environment/node_environment.o build/node_environment/data_server.o
+	mkdir -p build/node_environment
+	ar cru build/node_environment/libnode_environment.a build/node_environment/node_environment.o build/node_environment/data_server.o
+	ranlib build/node_environment/libnode_environment.a
 
 clean:
 	rm -rf build/
