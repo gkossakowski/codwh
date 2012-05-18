@@ -4,9 +4,15 @@ OBJS=build/proto.o build/server.o \
 		 build/operators/node.o build/groupby.o \
 		 build/operators/factory.o \
 		 build/operators/operation.o
-NET_OBJS=build/node_environment/libnode_environment.a \
+NET_OBJS= build/proto.o \
+		 build/operators/node.o \
+		 build/groupby.o \
+		 build/operators/factory.o \
+		 build/operators/operation.o \
+	  	 build/node_environment/libnode_environment.a \
 	 	 build/utils/libutils.a \
-	 	 build/netio/libnetio.a
+	 	 build/netio/libnetio.a \
+		 build/distributed_node.o 
 		 
 LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 NET_LIBS=${LIBS} -lboost_system-mt -lboost_thread-mt 
@@ -35,8 +41,20 @@ build/proto/operations.pb.cc: proto/operations.proto
 	mkdir -p build/
 	protoc $< --cpp_out build/
 
+build/distributed_node.o: distributed/node.cc distributed/node.h  build/proto.o
+	mkdir -p build/
+	${CC} -c -o $@ $<
+
 net_test: net_test.cc ${NET_OBJS}
 	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
+
+worker: worker.cc build/proto.o ${NET_OBJS}
+	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
+
+scheduler: scheduler.cc build/proto.o ${NET_OBJS}
+	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
+
+
 
 # Netio
 build/netio/network_input.o: netio/network_input.cc netio/network_input.h

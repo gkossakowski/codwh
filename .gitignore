@@ -2,4 +2,7 @@ src/build/*
 src/database
 src/exec_plan
 src/net_test
+src/worker
+src/scheduler
 test-actual
+*.swp
