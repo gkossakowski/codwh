@@ -98,11 +98,75 @@ message GroupByOperation {
   repeated Aggregation aggregations = 4;
 }
 
+message ScanOperationOwn {
+  enum Type {
+    INT = 1;
+    DOUBLE = 2;
+    BOOL = 3;
+  };
+
+  repeated int32 column = 1;
+  repeated Type type = 2;
+  // List of file-IDs.
+  repeated int32 source = 3;
+}
+
+message UnionOperation {
+  enum Type {
+    INT = 1;
+    DOUBLE = 2;
+    BOOL = 3;
+    HASH = 4; // There should be exactly one column with that type.
+  };
+  // Just like in a ScanOperation.
+  repeated int32 column = 1; 
+  repeated Type type = 2;
+  // Source node-IDs.
+  repeated int32 source = 3;
+}
+
+message ShuffleOperation {
+  required Operation source = 1;
+  // Nuber of shuffle buckets.
+  required int32 receiversCount = 2;
+}
+
+// Send-results-to-server operation.
+message FinalOperation {
+  required Operation source = 1;
+}
+
 message Operation {
   // Exactly one of the fields below is set.
   optional ScanOperation scan = 1;
   optional ComputeOperation compute = 2;
   optional FilterOperation filter = 3;
   optional GroupByOperation group_by = 4;
+
+  optional ScanOperationOwn scan_own = 5;
+  optional UnionOperation union = 6;
+  optional ShuffleOperation shuffle = 7;
+  optional FinalOperation final = 8;
 }
 
+message DataRequest {
+  /// Author of a request.
+  required int32 node = 1;
+  // Number of packages which we're able to process at the moment.
+  required int32 number = 2;
+}
+
+message DataResponse {
+  // Author of a request.
+  required int32 node = 1;
+  required int32 number = 2;
+  required int32 size = 3;
+  required bytes data = 4;
+}
+
+message Communication {
+  // Exactly one of the fields below is set.
+  optional Operation operation = 1;
+  optional DataRequest data_request = 2;
+  optional DataResponse data_response = 3;
+}
