@@ -77,6 +77,7 @@ class GroupByOperation : public Operation {
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
   vector<int> getTypes();
+  vector<int> getValueTypes();
   ~GroupByOperation();
 };
 

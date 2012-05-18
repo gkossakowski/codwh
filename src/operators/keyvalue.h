@@ -46,40 +46,59 @@ class Key {
 class Value {
  public:
   int n;
-  any_t* values;
+  int idx;
+  // target columns where we store (aggregated) values
+  vector<Column*>* values;
+//  any_t* values;
 
   Value(const Value& clone) {
     n = clone.n;
-    values = new any_t[n];
-    memcpy(values, clone.values, n * sizeof(any_t));
+    idx = clone.idx;
+    values = clone.values;
   }
 
-  Value(vector<Column*>* sources, vector<int>* aggregate, int idx) {
+  Value(vector<Column*>* const sources, vector<int>* const aggregate, const int source_idx, 
+        vector<Column*>* const target, const int target_idx) {
     n = aggregate->size();
-    values = new any_t[n];
-    memset(values, 0, n * sizeof(any_t));
-    update(sources, aggregate, idx);
+    values = target;
+    idx = target_idx;
+    for (int i=0; i<n; i++) {
+      (*target)[i]->zero(idx);
+    }
+    update(sources, aggregate, source_idx);
   }
 
   void putInto(vector<Column*>* result, int idx, int keyN) {
     for (int i = 0 ; i < n ; ++i) {
-      (*result)[keyN + i]->take(values[i], idx);
+      any_t any;
+      // TODO: remove?
+      memset(&any, 0, sizeof(any_t));
+      (*values)[i]->fill(&any, this->idx);
+      (*result)[keyN + i]->take(any, idx);
     }
   }
 
-  void update(vector<Column*>* sources, vector<int>* aggregate, int idx) {
+  void update(vector<Column*>* sources, vector<int>* aggregate, int source_idx) {
+//    printf("updating value with source_idx = %d and idx = %d\n", source_idx, idx);
     for (int i = 0 ; i < n ; ++i) {
       int v = (*aggregate)[i];
+      Column* col = (*values)[i];
       if (v == -1) {
-        values[i].int32 += 1;
+        static_cast<ColumnChunk<int>*>(col)->chunk[idx] += 1;
+//        values[i].int32 += 1;
       } else {
-        (*sources)[v]->addTo(&values[i], idx);
+        printf("sources[%d]..\n", v);
+        (*sources)[v]->debugPrint();
+        printf("col..\n");
+        col->debugPrint();
+        col->add((*sources)[v], source_idx, idx);
+//        (*sources)[v]->addTo(&values[i], idx);
       }
     }
   }
 
   ~Value() {
-    delete[] values;
+//    delete[] values;
   }
 };
 

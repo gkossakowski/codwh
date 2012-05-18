@@ -9,12 +9,21 @@
 #include "filter.h"
 #include "factory.h"
 #include "global.h"
+#include <string>
+#include <sstream>
 
 union any_t {
   int int32;
   double double_;
   bool boolean;
 };
+
+template <typename T>
+std::string to_string(T const& value) {
+  std::stringstream sstr;
+  sstr << value;
+  return sstr.str();
+}
 
 class Column {
  public:
@@ -23,8 +32,11 @@ class Column {
   virtual void filter(Column* cond, Column* result) = 0;
   virtual void fill(any_t* any, int idx) = 0;
   virtual void addTo(any_t* any, int idx) = 0;
+  virtual void add(Column* col, int src_idx, int target_idx) = 0;
   virtual void take(const any_t& any, int idx) = 0;
   virtual Column* clone() = 0;
+  virtual void debugPrint() = 0;
+  virtual void zero(int idx) = 0;
 };
 
 template<class T>
@@ -35,6 +47,7 @@ class ColumnChunk : public Column {
   void fill(any_t* any, int idx);
   void addTo(any_t* any, int idx);
   void take(const any_t& any, int idx);
+  void zero(int idx);
   void filter(Column* cond, Column* res) {
     ColumnChunk<char>* condition = static_cast<ColumnChunk<char>*>(cond);
     ColumnChunk<T>* result = static_cast<ColumnChunk<T>*>(res);
@@ -55,8 +68,27 @@ class ColumnChunk : public Column {
     memcpy(result->chunk, chunk, sizeof(T)*DEFAULT_CHUNK_SIZE);
     return result;
   }
+  void add(Column* col, int src_idx, int target_idx) {
+    printf("add called with T = %s\n", typeid(T).name());
+    ColumnChunk<T>* src = static_cast<ColumnChunk<T>*>(src);
+    // TODO what about adding bools?
+    T* src_chunk = src->chunk;
+    T src_value = src_chunk[src_idx];
+    std::string src_value_str = to_string(src_value);
+    printf("value = %s\n" , src_value_str.c_str());
+    chunk[target_idx] += src_value;
+  }
+  void debugPrint() {
+    printf("ColumnChunk::debugPrint\n");
+    printf("T = %s\n", typeid(T).name());
+    printf("size = %d\n", size);
+    printf("chunk = ");
+    for (int i=0; i<size; i++) {
+      printf("%s, ", to_string(chunk[i]).c_str());
+    }
+    printf("\n");
+  }
 };
-
 
 // consume, fill, addto, take {{{
 template<>
@@ -85,6 +117,13 @@ ColumnChunk<int>::take(const any_t& any, int idx) {
 
 template<>
 inline void
+ColumnChunk<int>::zero(int idx) {
+  printf("<int> zero(%d)\n", idx);
+  chunk[idx] = 0;
+}
+
+template<>
+inline void
 ColumnChunk<double>::consume(int column_index, Server* server) {
   server->ConsumeDoubles(column_index, size, &chunk[0]);
 }
@@ -105,6 +144,13 @@ template<>
 inline void
 ColumnChunk<double>::take(const any_t& any, int idx) {
   chunk[idx] = any.double_;
+}
+
+template<>
+inline void
+ColumnChunk<double>::zero(int idx) {
+  printf("<double> zero(%d)\n", idx);
+  chunk[idx] = 0.0;
 }
 
 template<>
@@ -136,7 +182,25 @@ ColumnChunk<char>::take(const any_t& any, int idx) {
     chunk[idx / 8] &= ~(1 << (idx & 7)); 
   }
 }
+
+template<>
+inline void
+ColumnChunk<char>::zero(int idx) {
+  printf("<char> zero(%d)\n", idx);
+  // false
+  chunk[idx / 8] &= ~(1 << (idx & 7));
+}
+
 // }}}
+
+template<>
+inline void
+ColumnChunk<char>::add(Column* col, int src_idx, int target_idx) {
+  assert(false);
+  //  ColumnChunk<T>* src = static_cast<ColumnChunk<T>*>(src);
+  // TODO what about adding bools?
+  //  chunk[target_idx] += src->chunk[src_idx];
+}
 
 class ColumnProvider : public Node {
   public:

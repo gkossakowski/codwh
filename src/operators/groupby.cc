@@ -52,6 +52,16 @@ vector<int> GroupByOperation::getTypes() {
   for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
     result.push_back(sourceTypes[groupByColumn[i]]);
   }
+  std::vector<int> valueTypes = getValueTypes();
+  for (unsigned i = 0; i < valueTypes.size(); i++) {
+    result.push_back(valueTypes[i]);
+  }
+  return result;
+}
+
+vector<int> GroupByOperation::getValueTypes() {
+  vector<int> sourceTypes = source->getTypes();
+  vector<int> result;
   for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
     if (aggregations[i] == -1) {
       result.push_back(query::ScanOperation_Type_INT);
@@ -67,11 +77,35 @@ vector<int> GroupByOperation::getTypes() {
   return result;
 }
 
+vector<Column*>* allocateValueColumns(const vector<int>& types) {
+  vector<Column*>* result = new vector<Column*>(types.size());
+  for (unsigned int i = 0 ; i < types.size() ; ++i) {
+    (*result)[i] = Factory::createColumnFromType(types[i]);
+  }
+  return result;
+}
+
 vector<Column*>*
 GroupByOperation::pull() {
   vector<Column*>* sourceColumns;
   
   vector< vector<Column*>* > allColumns;
+  vector< vector<Column*>* > allValues;
+  vector<int> valueTypes = getValueTypes();
+  int valuesIdx = 0;
+  allValues.push_back(allocateValueColumns(valueTypes));
+  
+  printf("aggregations: ");
+  for (int i=0; i < aggregations.size(); i++) {
+    printf("%d, ", aggregations[i]);
+  }
+  printf("\n");
+  
+  printf("valueTypes: ");
+  for (int i=0; i < valueTypes.size(); i++) {
+    printf("%d, ", valueTypes[i]);
+  }
+  printf("\n");
 
   if (m == NULL) {
     m = new MapType();
@@ -91,7 +125,12 @@ GroupByOperation::pull() {
        typeof(m->end()) it = m->find(key);
         if (it == m->end()) {
           // on insert
-          m->insert(MapType::value_type(key, Value(sourceColumns, &aggregations, i)));
+          m->insert(MapType::value_type(key, Value(sourceColumns, &aggregations, i, allValues.back(), valuesIdx)));
+          valuesIdx++;
+          if (valuesIdx == DEFAULT_CHUNK_SIZE) {
+            valuesIdx = 0;
+            allValues.push_back(allocateValueColumns(valueTypes));
+          }
         } else {
           // on update
           it->second.update(sourceColumns, &aggregations, i);;
