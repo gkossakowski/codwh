@@ -15,7 +15,20 @@ NET_OBJS= build/proto.o \
 		 build/distributed_node.o 
 		 
 LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
-NET_LIBS=${LIBS} -lboost_system-mt -lboost_thread-mt 
+
+# Ugly hack for an older version of boost on `students`
+ifneq (,$(wildcard /usr/lib64/libboost_thread.so))
+	BOOST_THREAD=-lboost_thread
+else
+	BOOST_THREAD=-lboost_thread-mt
+endif
+ifneq (,$(wildcard /usr/lib64/libboost_system.so))
+	BOOST_SYSTEM=-lboost_system
+else
+	BOOST_SYSTEM=-lboost_system-mt
+endif
+NET_LIBS=${LIBS} ${BOOST_THREAD} ${BOOST_SYSTEM}
+
 
 all: exec_plan scheduler worker
 
