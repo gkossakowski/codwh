@@ -82,12 +82,13 @@ void SchedulerNode::schedule(vector<query::Operation> *stripe, uint32_t nodes) {
  return ;
 }
 
-void SchedulerNode::sendJob(const query::Operation &op, uint32_t node) {
+void SchedulerNode::sendJob(query::Operation &op, uint32_t node) {
  query::Communication com;
+ const google::protobuf::Reflection *r = com.operation().GetReflection();
  string msg;
 
- *(com.mutable_operation()) = op;
- com.SerializeToString(&msg); // is there an easier/faster way?
+ r->Swap(com.mutable_operation(), &op); // breaks `op`, but no need to repair
+ com.SerializeToString(&msg);
  nei->SendPacket(node, msg.c_str(), msg.size());
  return ;
 }

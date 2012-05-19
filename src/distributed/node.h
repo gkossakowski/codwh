@@ -61,8 +61,8 @@ class SchedulerNode : public WorkerNode {
   vector<query::Operation>* makeStripes(query::Operation query);
   /** Fill in and send stripes for a given number of nodes */
   void schedule(vector<query::Operation> *stripe, uint32_t nodes);
-  /** Send job to a given node */
-  void sendJob(const query::Operation &op, uint32_t node);
+  /** Send job to a given node, the given job object is destroyed */
+  void sendJob(query::Operation &op, uint32_t node);
 
  public:
   SchedulerNode(NodeEnvironmentInterface *nei) : WorkerNode(nei) {};
