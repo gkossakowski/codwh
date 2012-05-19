@@ -248,6 +248,7 @@
 				OTHER_LDFLAGS = "-lboost_program_options";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
 		};
@@ -275,6 +276,7 @@
 				OTHER_LDFLAGS = "-lboost_program_options";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				VALID_ARCHS = x86_64;
 			};
 			name = Release;
 		};
