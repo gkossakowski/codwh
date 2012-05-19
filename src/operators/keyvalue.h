@@ -63,6 +63,8 @@ class Value {
     values = target;
     idx = target_idx;
     for (int i=0; i<n; i++) {
+      // little hack...
+      (*target)[i]->size = idx+1;
       (*target)[i]->zero(idx);
     }
     update(sources, aggregate, source_idx);
