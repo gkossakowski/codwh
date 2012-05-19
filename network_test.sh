@@ -1,7 +1,11 @@
 #!/bin/bash
 
-trap 'kill $(jobs -p)' EXIT
-trap 'kill $(jobs -p)' SIGINT
+if [ $# -lt 3 ] ; then
+  echo "Usage: ./network_test.sh NODES_NUM QUERY_NUM QUERY_FILE"
+  echo ""
+  echo "for example ./network_test.sh 2 1 queries/q1.ascii"
+  exit
+fi
 
 START_PORT=2000
 COUNT=$1
@@ -17,13 +21,18 @@ done
 
 PIDS=""
 
-for i in `seq 0 $MAX_NUMBER`; do
+for i in `seq 1 $MAX_NUMBER`; do
    PORT=`expr $START_PORT + $i`
-  if [ "$i" == "$MAX_NUMBER" ]; then sleep 3; fi;
-  echo "RUNNING:./src/net_test $i $PORT $HOSTS &"
-  ./src/net_test $i $PORT $HOSTS  & 
+  echo "RUNNING:./src/worker $i $PORT $HOSTS &"
+  ./src/worker $i $PORT $HOSTS  & 
   PIDS="$PIDS $!"
 done
 
+echo "RUNNING:./src/scheduler 1 queries/q1.ascii 0 $START_PORT $HOSTS &"
+sleep 1
+./src/scheduler $2 $3 0 $START_PORT $HOSTS &
+PIDS="$PIDS $!"
+
 echo $PIDS
-wait
+sleep 1
+killall worker

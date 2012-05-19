@@ -20,7 +20,7 @@ using google::protobuf::io::FileInputStream;
 
 int main(int argc, char** argv) {
   /** Read query */
-  int queryFd = open(argv[1], O_RDONLY);
+  int queryFd = open(argv[2], O_RDONLY);
   FileInputStream queryFile(queryFd);
   query::Operation query;
   TextFormat::Parse(&queryFile, &query);
@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
       CreateNodeEnvironment(argc - 2, argv + 2));
 
   /** Run job */
-  SchedulerNode scheduler(nei.get(), query);
-  scheduler.run();
+  SchedulerNode scheduler(nei.get());
+  scheduler.run(query);
 
   return 0;
 }

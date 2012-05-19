@@ -22,8 +22,8 @@ class WorkerNode {
  protected:
   vector<int32_t> source;
   NodeEnvironmentInterface *nei;
-  queue<query::Operation> jobs;
-  queue<query::DataRequest> requests;
+  queue<query::Operation *> jobs;
+  queue<query::DataRequest *> requests;
 
   /** Input buffer (stack) */
   vector<Column*> input;
@@ -31,8 +31,16 @@ class WorkerNode {
 
   // TODO : output buffer
 
+  /** Execute a first plan from a jobs queue */
+  int execPlan(query::Operation *op);
+
+  query::Communication* getMessage(bool blocking);
+
+  /** Wait until any job occurs */
+  void getJob();
+
  public:
-  WorkerNode(NodeEnvironmentInterface *nei);
+  WorkerNode(NodeEnvironmentInterface *nei) : nei(nei) {};
 
   /** Set data sources */
   void setSource(vector<int32_t> source);
@@ -40,8 +48,6 @@ class WorkerNode {
   vector<Column*> pull(int32_t number);
   /** Pack given data and eventually send to a consumer */
   void packData(vector<Column*> data);
-  /** Execute a first plan from a jobs queue */
-  void execPlan(query::Operation &op);
   /** Run worker */
   virtual void run();
 };
@@ -50,15 +56,19 @@ class SchedulerNode : public WorkerNode {
  private:
   SchedulerNode(const SchedulerNode &node);
 
- public:
-  SchedulerNode(NodeEnvironmentInterface *nei, query::Operation query);
-
+ protected:
   /** Slice query into stripes */
-  vector<query::Operation> makeStripes(query::Operation query);
+  vector<query::Operation>* makeStripes(query::Operation query);
   /** Fill in and send stripes for a given number of nodes */
-  void schedule(vector<query::Operation> stripe, int nodes);
+  void schedule(vector<query::Operation> *stripe, uint32_t nodes);
+  /** Send job to a given node */
+  void sendJob(const query::Operation &op, uint32_t node);
+
+ public:
+  SchedulerNode(NodeEnvironmentInterface *nei) : WorkerNode(nei) {};
+
   /** Run scheduler */
-  virtual void run();
+  virtual void run(const query::Operation &op);
 };
 
 #endif // DISTRIBUTED_NODE_H

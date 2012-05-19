@@ -5,8 +5,37 @@
 #include "node_environment/node_environment.h"
 #include "node.h"
 
-WorkerNode::WorkerNode(NodeEnvironmentInterface *nei) : nei(nei) {
- // TODO
+query::Communication* WorkerNode::getMessage(bool blocking) {
+ char *data;
+ size_t data_len;
+ query::Communication *message;
+
+ if (!blocking) {
+  data = nei->ReadPacketNotBlocking(&data_len);
+  if (NULL == data)
+   return NULL;
+ }
+ data = nei->ReadPacketBlocking(&data_len);
+ message = new query::Communication();
+ message->ParseFromString(string(data, data_len));
+ delete[] data;
+
+ return message;
+}
+
+void WorkerNode::getJob() {
+ /** Wait until a job occures, than store it in a jobs queue. */
+ std::cout << "Awaiting for a job" << std::endl;
+
+ query::Communication *message = getMessage(true);
+ if (message->has_operation()) {
+   jobs.push(message->release_operation());
+ } else if (message->has_data_request()) {
+   requests.push(message->release_data_request());
+ } else assert(false); // there should be no incoming data while awaiting
+                       // for a job
+ delete message;
+ return ;
 }
 
 void WorkerNode::setSource(vector<int32_t> source) {
@@ -22,29 +51,54 @@ void WorkerNode::packData(vector<Column*> data) {
   // TODO
 }
 
-void WorkerNode::execPlan(query::Operation &op) {
-  // TODO
+int WorkerNode::execPlan(query::Operation *op) {
+ std::cout << "Worker job proto tree: " << op->DebugString() << "\n";
+
+ // TODO : IMPLEMENT THIS
+ return 0;
 }
 
 void WorkerNode::run() {
-  // TODO
+ int ret = 0;
+ while (0 == ret) {
+  if (0 == jobs.size()) getJob();
+  execPlan(jobs.front());
+  jobs.pop();
+ };
+ return ;
 }
 
-
-SchedulerNode::SchedulerNode(NodeEnvironmentInterface *nei,
-                             query::Operation query) : WorkerNode(nei)
-{
-  // TODO
+vector<query::Operation>* SchedulerNode::makeStripes(query::Operation query) {
+ // TODO : IMPLEMENT THIS
+ vector<query::Operation> *stripes = new vector<query::Operation>();
+ stripes->push_back(query);
+ return stripes;
 }
 
-vector<query::Operation> SchedulerNode::makeStripes(query::Operation query) {
-  // TODO
+void SchedulerNode::schedule(vector<query::Operation> *stripe, uint32_t nodes) {
+ // TODO : IMPLEMENT THIS
+ for (uint32_t i = 1; i <= nodes; i++)
+  sendJob((*stripe)[0], i);
+ return ;
 }
 
-void SchedulerNode::schedule(vector<query::Operation> stripe, int nodes) {
-  // TODO
+void SchedulerNode::sendJob(const query::Operation &op, uint32_t node) {
+ query::Communication com;
+ string msg;
+
+ *(com.mutable_operation()) = op;
+ com.SerializeToString(&msg); // is there an easier/faster way?
+ nei->SendPacket(node, msg.c_str(), msg.size());
+ return ;
 }
 
-void SchedulerNode::run() {
-  // TODO
+void SchedulerNode::run(const query::Operation &op) {
+ std::cout << "Scheduling proto: " << op.DebugString() << "\n";
+ vector<query::Operation> *stripes = makeStripes(op);
+ schedule(stripes, nei->nodes_count() - 1);
+ delete stripes;
+
+ // TODO : switch to a worker mode
+ // execPlan(finalOperation);
+ return ;
 }

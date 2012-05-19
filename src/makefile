@@ -9,7 +9,7 @@ NET_OBJS= build/proto.o \
 		 build/groupby.o \
 		 build/operators/factory.o \
 		 build/operators/operation.o \
-	  	 build/node_environment/libnode_environment.a \
+		 build/node_environment/libnode_environment.a \
 	 	 build/utils/libutils.a \
 	 	 build/netio/libnetio.a \
 		 build/distributed_node.o 
@@ -17,7 +17,7 @@ NET_OBJS= build/proto.o \
 LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 NET_LIBS=${LIBS} -lboost_system-mt -lboost_thread-mt 
 
-all: exec_plan net_test
+all: exec_plan scheduler worker
 
 exec_plan: main.cc ${OBJS}
 	${CC} ${OBJS} $< ${LIBS} -o $@
@@ -44,9 +44,6 @@ build/proto/operations.pb.cc: proto/operations.proto
 build/distributed_node.o: distributed/node.cc distributed/node.h  build/proto.o
 	mkdir -p build/
 	${CC} -c -o $@ $<
-
-net_test: net_test.cc ${NET_OBJS}
-	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
 
 worker: worker.cc build/proto.o ${NET_OBJS}
 	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
