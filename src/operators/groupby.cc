@@ -95,17 +95,17 @@ GroupByOperation::pull() {
   int valuesIdx = 0;
   allValues.push_back(allocateValueColumns(valueTypes));
   
-  printf("aggregations: ");
-  for (int i=0; i < aggregations.size(); i++) {
-    printf("%d, ", aggregations[i]);
-  }
-  printf("\n");
-  
-  printf("valueTypes: ");
-  for (int i=0; i < valueTypes.size(); i++) {
-    printf("%d, ", valueTypes[i]);
-  }
-  printf("\n");
+//  printf("aggregations: ");
+//  for (int i=0; i < aggregations.size(); i++) {
+//    printf("%d, ", aggregations[i]);
+//  }
+//  printf("\n");
+//  
+//  printf("valueTypes: ");
+//  for (int i=0; i < valueTypes.size(); i++) {
+//    printf("%d, ", valueTypes[i]);
+//  }
+//  printf("\n");
 
   if (m == NULL) {
     m = new MapType();

@@ -87,10 +87,10 @@ class Value {
         static_cast<ColumnChunk<int>*>(col)->chunk[idx] += 1;
 //        values[i].int32 += 1;
       } else {
-        printf("sources[%d]..\n", v);
-        (*sources)[v]->debugPrint();
-        printf("col..\n");
-        col->debugPrint();
+//        printf("sources[%d]..\n", v);
+//        (*sources)[v]->debugPrint();
+//        printf("col..\n");
+//        col->debugPrint();
         col->add((*sources)[v], source_idx, idx);
 //        (*sources)[v]->addTo(&values[i], idx);
       }

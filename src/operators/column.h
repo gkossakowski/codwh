@@ -69,13 +69,13 @@ class ColumnChunk : public Column {
     return result;
   }
   void add(Column* col, int src_idx, int target_idx) {
-    printf("add called with T = %s\n", typeid(T).name());
+//    printf("add called with T = %s\n", typeid(T).name());
     ColumnChunk<T>* src = static_cast<ColumnChunk<T>*>(col);
     // TODO what about adding bools?
     T* src_chunk = src->chunk;
     T src_value = src_chunk[src_idx];
-    std::string src_value_str = to_string(src_value);
-    printf("value = %s\n" , src_value_str.c_str());
+//    std::string src_value_str = to_string(src_value);
+//    printf("value = %s\n" , src_value_str.c_str());
     chunk[target_idx] += src_value;
   }
   void debugPrint() {
@@ -118,7 +118,7 @@ ColumnChunk<int>::take(const any_t& any, int idx) {
 template<>
 inline void
 ColumnChunk<int>::zero(int idx) {
-  printf("<int> zero(%d)\n", idx);
+//  printf("<int> zero(%d)\n", idx);
   chunk[idx] = 0;
 }
 
@@ -149,7 +149,7 @@ ColumnChunk<double>::take(const any_t& any, int idx) {
 template<>
 inline void
 ColumnChunk<double>::zero(int idx) {
-  printf("<double> zero(%d)\n", idx);
+//  printf("<double> zero(%d)\n", idx);
   chunk[idx] = 0.0;
 }
 
@@ -186,7 +186,7 @@ ColumnChunk<char>::take(const any_t& any, int idx) {
 template<>
 inline void
 ColumnChunk<char>::zero(int idx) {
-  printf("<char> zero(%d)\n", idx);
+//  printf("<char> zero(%d)\n", idx);
   // false
   chunk[idx / 8] &= ~(1 << (idx & 7));
 }
