@@ -70,7 +70,7 @@ class ColumnChunk : public Column {
   }
   void add(Column* col, int src_idx, int target_idx) {
     printf("add called with T = %s\n", typeid(T).name());
-    ColumnChunk<T>* src = static_cast<ColumnChunk<T>*>(src);
+    ColumnChunk<T>* src = static_cast<ColumnChunk<T>*>(col);
     // TODO what about adding bools?
     T* src_chunk = src->chunk;
     T src_value = src_chunk[src_idx];
