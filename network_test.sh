@@ -36,3 +36,6 @@ PIDS="$PIDS $!"
 echo $PIDS
 sleep 1
 killall worker
+for job in `jobs -p`; do
+    wait $job
+done
