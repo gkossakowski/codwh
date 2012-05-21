@@ -127,8 +127,10 @@ message UnionOperation {
 
 message ShuffleOperation {
   required Operation source = 1;
-  // Nuber of shuffle buckets.
+  // Number of shuffle buckets.
   required int32 receiversCount = 2;
+  // We know which columns to select for shuffling and in which order
+  repeated int32 column = 3;
 }
 
 // Send-results-to-server operation.
