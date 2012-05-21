@@ -112,15 +112,8 @@ message ScanOperationOwn {
 }
 
 message UnionOperation {
-  enum Type {
-    INT = 1;
-    DOUBLE = 2;
-    BOOL = 3;
-    HASH = 4; // There should be exactly one column with that type.
-  };
   // Just like in a ScanOperation.
-  repeated int32 column = 1; 
-  repeated Type type = 2;
+  repeated int32 column = 1;
   // Source node-IDs.
   repeated int32 source = 3;
 }
