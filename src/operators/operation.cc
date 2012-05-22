@@ -208,3 +208,26 @@ vector<int> UnionOperation::getTypes() {
   return types;
 }
 // }}}
+
+// FinalOperation {{{
+FinalOperation::FinalOperation(const query::FinalOperation& oper) {
+  source = Factory::createOperation(oper.source());
+}
+
+vector<Column*>* FinalOperation::pull() {
+  return source->pull();
+}
+
+std::ostream& FinalOperation::debugPrint(std::ostream& output) {
+  output << "FinalOperation { " << *source;
+  return output << "}\n";
+}
+
+vector<int> FinalOperation::getTypes() {
+  return source->getTypes();
+}
+
+FinalOperation::~FinalOperation() {
+  delete source;
+}
+// }}}

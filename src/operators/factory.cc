@@ -26,6 +26,8 @@ Factory::createOperation(const query::Operation& operation) {
     return new ShuffleOperation(operation.shuffle());
   } else if (operation.has_union_()) {
     return new UnionOperation(operation.union_());
+  } else if (operation.has_final()) {
+    return new FinalOperation(operation.final());
   } else {
     std::cout << "ERROR: unknown operation" <<
         operation.DebugString() << "\n";
