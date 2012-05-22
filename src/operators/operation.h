@@ -102,5 +102,15 @@ class UnionOperation : public Operation {
   vector<int> getTypes();
 };
 
+class FinalOperation : public Operation {
+  Operation* source;
+ public:
+  FinalOperation(const query::FinalOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+  ~FinalOperation();
+};
+
 #endif // OPERATION_H
 
