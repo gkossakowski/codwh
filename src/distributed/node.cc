@@ -121,7 +121,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
 
     query::Operation shuffle;
     shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
-    for (int i=0; i < columns.size(); i++) {
+    for (unsigned int i=0; i < columns.size(); i++) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
     }
     stripes.push_back(shuffle);
