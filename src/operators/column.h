@@ -18,6 +18,7 @@ union any_t {
 
 class Column {
  public:
+  Column(): size(0) { }
   int size;
   virtual void consume(int column_index, Server* server) = 0;
   virtual void filter(Column* cond, Column* result) = 0;
