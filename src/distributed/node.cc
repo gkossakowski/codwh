@@ -44,7 +44,9 @@ void WorkerNode::setSource(vector<int32_t> source) {
 }
 
 vector<Column*> WorkerNode::pull(int32_t number) {
-  // TODO
+  // TODO: implement
+  assert(false); // not implemented yet
+  return vector<Column*>();
 }
 
 void WorkerNode::packData(vector<Column*> data) {
@@ -109,10 +111,10 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
 
     // columns needed by group by operations both for keys and values
     vector<int> columns;
-    for (int i=0; i < groupBy.group_by_column_size(); i++) {
+    for (int i = 0; i < groupBy.group_by_column_size(); i++) {
       columns.push_back(groupBy.group_by_column(i));
     }
-    for (int i=0; i < groupBy.aggregations_size(); i++) {
+    for (int i = 0; i < groupBy.aggregations_size(); i++) {
       if (groupBy.aggregations(i).has_aggregated_column())
         columns.push_back(groupBy.aggregations(i).aggregated_column());
     }
@@ -126,7 +128,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
 
     groupBy.clear_source();
     query::UnionOperation* union_ = groupBy.mutable_source()->mutable_union_();
-    for (int i=0; i < columns.size(); i++) {
+    for (unsigned i = 0; i < columns.size(); i++) {
       union_->add_column(columns[i]);
     }
 
@@ -198,7 +200,7 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes) 
       sendJob(firstStripe, i);
     }
   }
-  for (int i = 1; i < stripes->size()-1; i++) {
+  for (unsigned i = 1; i + 1 < stripes->size(); i++) {
     query::Operation& stripe = (*stripes)[i];
     // assign nodes to union that were sent jobs to
     // in a previous iteration
@@ -237,7 +239,7 @@ void SchedulerNode::run(const query::Operation &op) {
  std::cout << "Scheduling proto: " << op.DebugString() << "\n";
  vector<query::Operation> *stripes = makeStripes(op);
   std::cout << "after striping: " << std::endl;
-  for (int i=0; i < stripes->size(); i++) {
+  for (unsigned i=0; i < stripes->size() ; i++) {
     std::cout << "STRIPE " << i << std::endl;
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
