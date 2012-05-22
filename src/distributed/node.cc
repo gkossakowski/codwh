@@ -105,12 +105,6 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     query::Operation lastStripe = stripes.back();
     stripes.pop_back();
 
-    query::Operation shuffle;
-    shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
-    // TODO implement it for real
-    shuffle.mutable_shuffle()->set_receiverscount(10);
-    stripes.push_back(shuffle);
-
     query::GroupByOperation groupBy = query.group_by();
 
     // columns needed by group by operations both for keys and values
@@ -122,6 +116,13 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
       if (groupBy.aggregations(i).has_aggregated_column())
         columns.push_back(groupBy.aggregations(i).aggregated_column());
     }
+
+    query::Operation shuffle;
+    shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
+    for (int i=0; i < columns.size(); i++) {
+      shuffle.mutable_shuffle()->add_column(columns[i]);
+    }
+    stripes.push_back(shuffle);
 
     groupBy.clear_source();
     query::UnionOperation* union_ = groupBy.mutable_source()->mutable_union_();
