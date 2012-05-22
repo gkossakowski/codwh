@@ -112,7 +112,7 @@ message ScanOperationOwn {
 }
 
 message UnionOperation {
-  // Just like in a ScanOperation.
+  // which columns shuffle is going to serve
   repeated int32 column = 1;
   // Source node-IDs.
   repeated int32 source = 3;
@@ -122,7 +122,7 @@ message ShuffleOperation {
   required Operation source = 1;
   // Number of shuffle buckets.
   required int32 receiversCount = 2;
-  // We know which columns to select for shuffling and in which order
+  // We know which columns to select for shuffling
   repeated int32 column = 3;
 }
 
