@@ -112,18 +112,35 @@ message ScanOperationOwn {
 }
 
 message UnionOperation {
+  enum Type {
+    INT = 1;
+    DOUBLE = 2;
+    BOOL = 3;
+    HASH = 4; // There should be exactly one column with that type.
+  };
   // which columns shuffle is going to serve
   repeated int32 column = 1;
+  // type of columns
+  repeated Type type = 2;
   // Source node-IDs.
   repeated int32 source = 3;
 }
 
 message ShuffleOperation {
+  // exactly the same as in union operation
+  enum Type {
+    INT = 1;
+    DOUBLE = 2;
+    BOOL = 3;
+    HASH = 4; // There should be exactly one column with that type.
+  };
   required Operation source = 1;
   // Number of shuffle buckets.
   required int32 receiversCount = 2;
   // We know which columns to select for shuffling
   repeated int32 column = 3;
+  // types of columns
+  repeated Type type = 4;
 }
 
 // Send-results-to-server operation.
