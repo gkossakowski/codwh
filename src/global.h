@@ -7,6 +7,8 @@
 #include <string>
 
 const int DEFAULT_CHUNK_SIZE = 512;
+const int MAX_PACKET_SIZE = 100 * 1024; // TODO : find a good value
+const int MAX_OUTPUT_PACKETS = 100; // in packets
 
 namespace global {
 
@@ -29,6 +31,9 @@ template<>
 inline int getType<char>() {
   return 3;
 }
+
+
+const int TypeSize[] = { 0, 4, 8, 1 };
 
 
 template<class T>
