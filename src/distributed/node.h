@@ -100,7 +100,7 @@ class Packet {
   vector<char *> columns;
   vector<uint32_t> offsets;
   vector<int32_t> types;
-  size_t size; /** size in bytes */
+  size_t size; /** size in rows */
   size_t capacity; /** maximum capacity in rows */
 
  public:

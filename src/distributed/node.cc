@@ -87,7 +87,7 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
  query::DataRequest *request;
  int buckets_num = output.size();
 
- if (buck.back()->full)
+ if (buck.size() == 0 || buck.back()->full)
   buck.push(new Packet(data, sent_columns));
  buck.back()->consume(data);
 
@@ -97,8 +97,9 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
 
  flushBucket(bucket);
 
+ /* Probably, the situation below won't occur. */
  while (full_packets == MAX_OUTPUT_PACKETS) {
-  while (requests.size() == 0) {
+  while (requests.size() > 0) {
    request = requests.back();
    requests.pop();
 
@@ -190,7 +191,7 @@ void SchedulerNode::run(const query::Operation &op) {
 
 
 Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
-  : full(false)
+  : size(0), full(false)
 {
  size_t row_size = 0;
  columns.resize(view.size(), NULL);
@@ -218,13 +219,10 @@ Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
 void Packet::consume(vector<Column*> view){
  if (full) assert(false); // should check if it's full before calling!
 
- size_t delta;
  for (uint32_t i = 0; i < view.size(); i++)
-  if (types[i] > 0) {
-   delta = view[i]->transfuse(columns[i] + offsets[i]);
-   offsets[i] += delta;
-   size += delta;
-  }
+  if (types[i] > 0)
+   offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
+ size += static_cast<size_t>(view[0]->size);
 
  if (capacity - size < static_cast<size_t>(DEFAULT_CHUNK_SIZE))
   full = true;
