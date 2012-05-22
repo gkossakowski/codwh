@@ -4,6 +4,7 @@
 #include "proto/operations.pb.h"
 #include "node_environment/node_environment.h"
 #include "node.h"
+#include "../operators/factory.h"
 
 query::Communication* WorkerNode::getMessage(bool blocking) {
  char *data;
@@ -114,18 +115,31 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
 
     // columns needed by group by operations both for keys and values
     vector<int> columns;
-    for (int i = 0; i < groupBy.group_by_column_size(); i++) {
-      columns.push_back(groupBy.group_by_column(i));
-    }
-    for (int i = 0; i < groupBy.aggregations_size(); i++) {
-      if (groupBy.aggregations(i).has_aggregated_column())
-        columns.push_back(groupBy.aggregations(i).aggregated_column());
+    // types of all columns of the source of group by
+    vector<int> types;
+    {
+      GroupByOperation* groupByOp = static_cast<GroupByOperation*>(Factory::createOperation(op));
+      columns = groupByOp->getUsedColumnsId();
+      types = Factory::createOperation(groupBy.source())->getTypes();
     }
 
     query::Operation shuffle;
     shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
     for (unsigned int i=0; i < columns.size(); i++) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
+      switch (types[columns[i]]) {
+        case query::ScanOperation_Type_BOOL:
+          shuffle.mutable_shuffle()->add_type(query::ShuffleOperation_Type_BOOL);
+          break;
+        case query::ScanOperation_Type_INT:
+          shuffle.mutable_shuffle()->add_type(query::ShuffleOperation_Type_INT);
+          break;
+        case query::ScanOperation_Type_DOUBLE:
+          shuffle.mutable_shuffle()->add_type(query::ShuffleOperation_Type_INT);
+          break;
+        default:
+          break;
+      }
     }
     stripes.push_back(shuffle);
 
@@ -133,6 +147,19 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     query::UnionOperation* union_ = groupBy.mutable_source()->mutable_union_();
     for (unsigned i = 0; i < columns.size(); i++) {
       union_->add_column(columns[i]);
+      switch (types[columns[i]]) {
+        case query::ScanOperation_Type_BOOL:
+          union_->add_type(query::UnionOperation_Type_BOOL);
+          break;
+        case query::ScanOperation_Type_INT:
+          union_->add_type(query::UnionOperation_Type_INT);
+          break;
+        case query::ScanOperation_Type_DOUBLE:
+          union_->add_type(query::UnionOperation_Type_INT);
+          break;
+        default:
+          break;
+      }
     }
 
     query::Operation groupByOp;
