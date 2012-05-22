@@ -57,6 +57,7 @@ compute {
                   type: DOUBLE
                   column: 2
                   type: DOUBLE
+                  number_of_files: 3;
                 }
               }
             }

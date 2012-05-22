@@ -9,6 +9,7 @@ group_by {
     scan {
       column: 0
       type: BOOL
+      number_of_files: 3;
     }
   }
 }

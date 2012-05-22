@@ -45,6 +45,7 @@ filter {
               type: BOOL
               column: 1
               type: INT
+              number_of_files: 3;
             }
           }
         }

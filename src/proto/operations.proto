@@ -50,6 +50,7 @@ message ScanOperation {
   // type of input column[i].
   repeated int32 column = 1;
   repeated Type type = 2;
+  required int32 number_of_files = 3; // The file ids are 0 .. (number_of_files - 1).
 }
 
 // Columns returned are the expressions, indexed in the order given. So after

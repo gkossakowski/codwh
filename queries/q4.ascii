@@ -9,6 +9,7 @@ compute {
           type: INT
           column: 1
           type: DOUBLE
+          number_of_files: 3;
         }
       }
       expression {

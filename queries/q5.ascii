@@ -66,6 +66,7 @@ compute {
           type: INT
           column: 1
           type: INT
+          number_of_files: 3;
         }
       }
     }
