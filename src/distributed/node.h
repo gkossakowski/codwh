@@ -99,14 +99,13 @@ class Packet {
  private:
   vector<char *> columns;
   vector<uint32_t> offsets;
-  vector<uint32_t> types;
+  vector<int32_t> types;
   size_t size; /** size in bytes */
   size_t capacity; /** maximum capacity in rows */
-  vector<bool> *sent_columns;
 
  public:
   bool full; /** only Packet should write to this! */
-  Packet(vector<Column*> &view, vector<bool> *sent_columns);
+  Packet(vector<Column*> &view, vector<bool> &sent_columns);
   Packet(char data[], size_t data_len);
 
   void consume(vector<Column*> view);

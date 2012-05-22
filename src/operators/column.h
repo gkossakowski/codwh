@@ -65,7 +65,7 @@ ColumnChunk<T>::getType(){
 template<class T>
 inline size_t
 ColumnChunk<T>::transfuse(void *dst) {
-  memcpy(dst, chunk, size * sizeof(T));
+  std::copy(chunk, chunk + size, reinterpret_cast<T*>(dst));
   return size * sizeof(T);
 }
 

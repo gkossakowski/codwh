@@ -1,5 +1,5 @@
 INC=-Ibuild/ -I../build/ -Iserver/ -I. -I/opt/local/include/
-CC=g++ -O2 -Wall ${INC}
+CC=g++ -O2 -Wall -ggdb ${INC}
 OBJS=build/proto.o build/server.o \
 		 build/operators/node.o build/groupby.o \
 		 build/operators/factory.o \
@@ -35,7 +35,7 @@ all: exec_plan scheduler worker
 exec_plan: main.cc ${OBJS}
 	${CC} ${OBJS} $< ${LIBS} -o $@
 
-build/operators/%.o: operators/%.cc operators/%.h
+build/operators/%.o: operators/%.cc operators/%.h operators/column.h
 	mkdir -p build/operators
 	${CC} -c -o $@ $<
 
@@ -64,7 +64,8 @@ worker: worker.cc build/proto.o ${NET_OBJS}
 scheduler: scheduler.cc build/proto.o ${NET_OBJS}
 	${CC} $< ${NET_OBJS} ${NET_LIBS} -o $@
 
-
+dist_tests: dist_tests.cc ${NET_OBJS}
+	${CC} -DTEST $< ${NET_OBJS} ${NET_LIBS} -o $@
 
 # Netio
 build/netio/network_input.o: netio/network_input.cc netio/network_input.h

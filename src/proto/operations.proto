@@ -152,9 +152,8 @@ message DataRequest {
 }
 
 message DataPacket {
-  repeated bool mask = 1;
-  repeated int32 type = 2;
-  repeated bytes data = 3;
+  repeated int32 type = 1;
+  repeated bytes data = 2;
 }
 
 message DataResponse {

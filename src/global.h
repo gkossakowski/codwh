@@ -6,9 +6,15 @@
 
 #include <string>
 
+#ifndef TEST
 const int DEFAULT_CHUNK_SIZE = 512;
-const int MAX_PACKET_SIZE = 100 * 1024; // TODO : find a good value
+const int MAX_PACKET_SIZE = 1000 * 1024; // TODO : find a good value
 const int MAX_OUTPUT_PACKETS = 100; // in packets
+#else
+const int DEFAULT_CHUNK_SIZE = 4;
+const int MAX_PACKET_SIZE = 100; // TODO : find a good value
+const int MAX_OUTPUT_PACKETS = 5; // in packets
+#endif
 
 namespace global {
 

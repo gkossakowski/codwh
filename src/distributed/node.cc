@@ -88,7 +88,7 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
  int buckets_num = output.size();
 
  if (buck.back()->full)
-  buck.push(new Packet(data, &sent_columns));
+  buck.push(new Packet(data, sent_columns));
  buck.back()->consume(data);
 
  if (buck.back()->full)
@@ -189,8 +189,8 @@ void SchedulerNode::run(const query::Operation &op) {
 }
 
 
-Packet::Packet(vector<Column*> &view, vector<bool> *sent_columns)
-  : sent_columns(sent_columns), full(false)
+Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
+  : full(false)
 {
  size_t row_size = 0;
  columns.resize(view.size(), NULL);
@@ -198,20 +198,20 @@ Packet::Packet(vector<Column*> &view, vector<bool> *sent_columns)
  types.resize(view.size(), 0);
 
  // collect row size and types
- for (uint32_t i = 0; i < view.size(); i++)
-  if ((*sent_columns)[i]){
-    types[i] = view[i]->getType();
+ for (uint32_t i = 0; i < view.size(); i++) {
+  types[i] = view[i]->getType();
+  if (sent_columns[i]){
     row_size += global::TypeSize[types[i]];
-  }
+  } else types[i] *= -1; // omited column
+ }
 
  // compute maximum capacity
  capacity = MAX_PACKET_SIZE / row_size;
 
  // allocate space and reset data counters;
  for (uint32_t i = 0; i < view.size(); i++)
-  if ((*sent_columns)[i]) {
+  if (sent_columns[i])
    columns[i] = new char[capacity * global::TypeSize[types[i]]];
-  }
 }
 
 /** Tries to consume a view. If it's too much data - returns false. */
@@ -220,7 +220,7 @@ void Packet::consume(vector<Column*> view){
 
  size_t delta;
  for (uint32_t i = 0; i < view.size(); i++)
-  if ((*sent_columns)[i]) {
+  if (types[i] > 0) {
    delta = view[i]->transfuse(columns[i] + offsets[i]);
    offsets[i] += delta;
    size += delta;
@@ -233,10 +233,9 @@ void Packet::consume(vector<Column*> view){
 query::DataPacket* Packet::serialize() {
  query::DataPacket *packet = new query::DataPacket();
 
- for (uint32_t i = 0; i < sent_columns->size(); i++) {
-  packet->add_mask((*sent_columns)[i]);
-  packet->add_type(types[i]);
-  if ((*sent_columns)[i])
+ for (uint32_t i = 0; i < types.size(); i++) {
+  packet->add_type(abs(types[i]));
+  if (types[i] > 0)
    packet->add_data(columns[i], offsets[i]);
   else packet->add_data(string()); // empty string
  }
