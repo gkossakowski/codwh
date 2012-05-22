@@ -129,13 +129,13 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
       switch (types[columns[i]]) {
         case query::ScanOperation_Type_BOOL:
-          shuffle.mutable_shuffle()->add_type(query::ShuffleOperation_Type_BOOL);
+          shuffle.mutable_shuffle()->add_type(query::BOOL);
           break;
         case query::ScanOperation_Type_INT:
-          shuffle.mutable_shuffle()->add_type(query::ShuffleOperation_Type_INT);
+          shuffle.mutable_shuffle()->add_type(query::INT);
           break;
         case query::ScanOperation_Type_DOUBLE:
-          shuffle.mutable_shuffle()->add_type(query::ShuffleOperation_Type_INT);
+          shuffle.mutable_shuffle()->add_type(query::DOUBLE);
           break;
         default:
           break;
@@ -149,13 +149,13 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
       union_->add_column(columns[i]);
       switch (types[columns[i]]) {
         case query::ScanOperation_Type_BOOL:
-          union_->add_type(query::UnionOperation_Type_BOOL);
+          union_->add_type(query::BOOL);
           break;
         case query::ScanOperation_Type_INT:
-          union_->add_type(query::UnionOperation_Type_INT);
+          union_->add_type(query::INT);
           break;
         case query::ScanOperation_Type_DOUBLE:
-          union_->add_type(query::UnionOperation_Type_INT);
+          union_->add_type(query::INT);
           break;
         default:
           break;
@@ -186,13 +186,13 @@ void addColumnsAndTypesToShuffle(query::ShuffleOperation& shuffle) {
     // so we can get rid of those tiring conversions
     switch (types[i]) {
       case query::ScanOperation_Type_BOOL:
-        shuffle.add_type(query::ShuffleOperation_Type_BOOL);
+        shuffle.add_type(query::BOOL);
         break;
       case query::ScanOperation_Type_INT:
-        shuffle.add_type(query::ShuffleOperation_Type_INT);
+        shuffle.add_type(query::INT);
         break;
       case query::ScanOperation_Type_DOUBLE:
-        shuffle.add_type(query::ShuffleOperation_Type_DOUBLE);
+        shuffle.add_type(query::DOUBLE);
         break;
       default:
         assert(false);
@@ -219,21 +219,7 @@ vector<query::Operation>* SchedulerNode::makeStripes(query::Operation query) {
     assert(lastButOne.has_shuffle());
     for (int i = 0; i < lastButOne.shuffle().column_size(); i++) {
       unionOp.add_column(lastButOne.shuffle().column(i));
-      // TODO establish one message for types that we'll use everywhere
-      // so we can get rid of those tiring conversions
-      switch (lastButOne.shuffle().type(i)) {
-        case query::ShuffleOperation_Type_BOOL:
-          unionOp.add_type(query::UnionOperation_Type_BOOL);
-          break;
-        case query::ShuffleOperation_Type_INT:
-          unionOp.add_type(query::UnionOperation_Type_INT);
-          break;
-        case query::ShuffleOperation_Type_DOUBLE:
-          unionOp.add_type(query::UnionOperation_Type_DOUBLE);
-          break;
-        default:
-          assert(false);
-      }
+      unionOp.add_type(lastButOne.shuffle().type(i));
     }
     stripes.push_back(finalOp);
   }
