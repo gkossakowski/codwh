@@ -110,7 +110,7 @@ class Packet {
   Packet(char data[], size_t data_len);
 
   void consume(vector<Column*> view);
-  size_t serialize(char *buffer);
+  query::DataPacket* serialize();
 
   ~Packet();
 };

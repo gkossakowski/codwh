@@ -117,19 +117,21 @@ void WorkerNode::flushBucket(int bucket) {
   return;
 
  query::DataResponse response;
+ query::DataPacket *packet;
+ const google::protobuf::Reflection *r = response.data().GetReflection();
  string msg;
  response.set_node(nei->my_node_number());
 
  while (pending_requests[bucket] > 0 && !output[bucket].front()->full) {
-  size_t data_len = output[bucket].front()->serialize(output_data);
+  packet = output[bucket].front()->serialize();
   output_counters[bucket]++;
 
   response.set_number(output_counters[bucket]);
-  response.set_size(data_len);
-  response.set_data(output_data, data_len);
+  r->Swap(response.mutable_data(), packet);
   response.SerializeToString(&msg);
 
   nei->SendPacket(bucket, msg.c_str(), msg.size());
+  delete packet;
  }
 }
 
@@ -228,27 +230,17 @@ void Packet::consume(vector<Column*> view){
   full = true;
 }
 
-size_t Packet::serialize(char *buffer) {
- // TODO : It's vulenrable to a big number of columns (not sufficient space for
- // metadata).
+query::DataPacket* Packet::serialize() {
+ query::DataPacket *packet = new query::DataPacket();
 
- // write number of columns
- size_t offset = 0;
- *(reinterpret_cast<uint32_t*>(buffer)) = columns.size();
- // write columns mask
- std::copy(sent_columns->begin(), sent_columns->end(), buffer + offset);
- // write offsets
- std::copy(offsets.begin(), offsets.end(), buffer + offset);
- // write types
- std::copy(types.begin(), types.end(), buffer + offset);
- offset = sizeof(uint32_t) + (sizeof(bool) + sizeof(uint32_t) * 2) * columns.size();
- // write columns
- for (uint32_t i = 0; i < columns.size(); i++) {
-  std::copy(columns[i], columns[i] + offsets[i], buffer + offset);
-  offset += offsets[i];
+ for (uint32_t i = 0; i < sent_columns->size(); i++) {
+  packet->add_mask((*sent_columns)[i]);
+  packet->add_type(types[i]);
+  if ((*sent_columns)[i])
+   packet->add_data(columns[i], offsets[i]);
+  else packet->add_data(string()); // empty string
  }
-
- return offset;
+ return packet;
 }
 
 Packet::Packet(char data[], size_t data_len) {
