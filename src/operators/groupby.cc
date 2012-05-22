@@ -3,7 +3,10 @@
 
 #include "operation.h"
 
+#include <set>
 #include "keyvalue.h"
+
+using std::set;
 
 GroupByOperation::GroupByOperation(const query::GroupByOperation& oper) {
   m = NULL;
@@ -65,6 +68,20 @@ vector<int> GroupByOperation::getTypes() {
     }
   }
   return result;
+}
+
+vector<int> GroupByOperation::getUsedColumnsId() {
+  vector<int> sourceTypes = source->getTypes();
+  set<int> result;
+  for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
+    result.insert(groupByColumn[i]);
+  }
+  for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
+    if (aggregations[i] != -1) {
+      result.insert(aggregations[i]);
+    }
+  }
+  return vector<int>(result.begin(), result.end());
 }
 
 vector<Column*>*
