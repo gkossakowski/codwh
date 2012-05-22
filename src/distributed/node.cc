@@ -52,8 +52,7 @@ void WorkerNode::packData(vector<Column*> data) {
 }
 
 int WorkerNode::execPlan(query::Operation *op) {
- std::cout << "Worker job proto tree: " << op->DebugString() << "\n";
-
+  printf("Worker[%d] job proto tree:\n%s\n", nei->my_node_number(), op->DebugString().c_str());
  // TODO : IMPLEMENT THIS
  return 0;
 }
