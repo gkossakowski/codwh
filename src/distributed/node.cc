@@ -167,7 +167,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
           union_->add_type(query::INT);
           break;
         case query::ScanOperation_Type_DOUBLE:
-          union_->add_type(query::INT);
+          union_->add_type(query::DOUBLE);
           break;
         default:
           break;
