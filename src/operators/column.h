@@ -20,6 +20,8 @@ class Column {
  public:
   Column(): size(0) { }
   int size;
+  virtual int getType() = 0;
+  virtual size_t transfuse(void *dst) = 0;
   virtual void consume(int column_index, Server* server) = 0;
   virtual void filter(Column* cond, Column* result) = 0;
   virtual void fill(any_t* any, int idx) = 0;
@@ -31,6 +33,8 @@ template<class T>
 class ColumnChunk : public Column {
  public:
   T chunk[DEFAULT_CHUNK_SIZE];
+  int getType();
+  size_t transfuse(void *dst);
   void consume(int column_index, Server* server);
   void fill(any_t* any, int idx);
   void addTo(any_t* any, int idx);
@@ -51,8 +55,25 @@ class ColumnChunk : public Column {
   }
 };
 
+// typeSize, transfuse {{{
+
+template<class T>
+inline int
+ColumnChunk<T>::getType(){
+  return global::getType<T>();
+}
+
+template<class T>
+inline size_t
+ColumnChunk<T>::transfuse(void *dst) {
+  std::copy(chunk, chunk + size, reinterpret_cast<T*>(dst));
+  return size * sizeof(T);
+}
+
+// }}}
 
 // consume, fill, addto, take {{{
+
 template<>
 inline void
 ColumnChunk<int>::consume(int column_index, Server* server) {
