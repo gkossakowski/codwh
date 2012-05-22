@@ -172,8 +172,71 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
   return stripes;
 }
 
+vector<int> getColumnTypes(const query::Operation& opProto) {
+  Operation* op = Factory::createOperation(opProto);
+  vector<int> result = op->getTypes();
+  return result;
+}
+
+void addColumnsAndTypesToShuffle(query::ShuffleOperation& shuffle) {
+  vector<int> types = getColumnTypes(shuffle.source());
+  for (unsigned int i = 0; i < types.size(); i++) {
+    shuffle.add_column(i);
+    // TODO establish one message for types that we'll use everywhere
+    // so we can get rid of those tiring conversions
+    switch (types[i]) {
+      case query::ScanOperation_Type_BOOL:
+        shuffle.add_type(query::ShuffleOperation_Type_BOOL);
+        break;
+      case query::ScanOperation_Type_INT:
+        shuffle.add_type(query::ShuffleOperation_Type_INT);
+        break;
+      case query::ScanOperation_Type_DOUBLE:
+        shuffle.add_type(query::ShuffleOperation_Type_DOUBLE);
+        break;
+      default:
+        assert(false);
+    }
+  }
+}
+
 vector<query::Operation>* SchedulerNode::makeStripes(query::Operation query) {
   vector<query::Operation> stripes = stripeOperation(query);
+  // add shuffle to the last but one stripe
+  {
+    query::Operation shuffleOp;
+    query::Operation lastButOne = stripes.back();
+    stripes.pop_back();
+    shuffleOp.mutable_shuffle()->mutable_source()->MergeFrom(lastButOne);
+    addColumnsAndTypesToShuffle(*shuffleOp.mutable_shuffle());
+    stripes.push_back(shuffleOp);
+  }
+  // add the last stripe that is just union and final operation
+  {
+    query::Operation finalOp;
+    query::UnionOperation& unionOp = *finalOp.mutable_final()->mutable_source()->mutable_union_();
+    query::Operation& lastButOne = stripes.back();
+    assert(lastButOne.has_shuffle());
+    for (int i = 0; i < lastButOne.shuffle().column_size(); i++) {
+      unionOp.add_column(lastButOne.shuffle().column(i));
+      // TODO establish one message for types that we'll use everywhere
+      // so we can get rid of those tiring conversions
+      switch (lastButOne.shuffle().type(i)) {
+        case query::ShuffleOperation_Type_BOOL:
+          unionOp.add_type(query::UnionOperation_Type_BOOL);
+          break;
+        case query::ShuffleOperation_Type_INT:
+          unionOp.add_type(query::UnionOperation_Type_INT);
+          break;
+        case query::ShuffleOperation_Type_DOUBLE:
+          unionOp.add_type(query::UnionOperation_Type_DOUBLE);
+          break;
+        default:
+          assert(false);
+      }
+    }
+    stripes.push_back(finalOp);
+  }
   vector<query::Operation> *stripes_ptr = new vector<query::Operation>(stripes.begin(), stripes.end());
   return stripes_ptr;
 }
