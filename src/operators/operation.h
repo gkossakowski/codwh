@@ -23,7 +23,7 @@ class Operation : public Node {
  protected:
   vector<Column*> cache;
  public:
-  /** Get return types */
+  /** Get return types, ints are used as constants corresponding to types from ScanOperation */
   virtual vector<int> getTypes() = 0;
   /** Pull next chunk of data */
   virtual vector<Column*>* pull() = 0;
