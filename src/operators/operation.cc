@@ -171,7 +171,7 @@ ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
 
 vector<Column*>* ShuffleOperation::pull() {
   // TODO: implement
-  return NULL; // shuffle does nit return data
+  return source->pull();
 }
 
 std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
@@ -180,6 +180,7 @@ std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
 }
 
 vector<int> ShuffleOperation::getTypes() {
+  // TODO: implement
   return source->getTypes();
 }
 
@@ -196,7 +197,9 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
 
 vector<Column*>* UnionOperation::pull() {
   // TODO: implement
-  return NULL;
+  vector<Column*>* tmp = new vector<Column*>;
+  tmp->push_back(new ColumnChunk<double>());
+  return tmp;
 }
 
 std::ostream& UnionOperation::debugPrint(std::ostream& output) {

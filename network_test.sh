@@ -23,8 +23,8 @@ PIDS=""
 
 for i in `seq 1 $MAX_NUMBER`; do
    PORT=`expr $START_PORT + $i`
-  echo "RUNNING:./src/worker $i $PORT $HOSTS &"
-  ./src/worker $i $PORT $HOSTS  & 
+  echo "RUNNING:./src/worker $i $PORT $HOSTS $2 &"
+  ./src/worker $i $PORT $HOSTS $2  & # we will remove query um later
   PIDS="$PIDS $!"
 done
 

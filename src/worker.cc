@@ -11,6 +11,7 @@
 using google::protobuf::TextFormat;
 using google::protobuf::io::FileInputStream;
 
+#include "node_environment/data_server.h"
 #include "operators/factory.h"
 #include "operators/operation.h"
 #include "node_environment/node_environment.h"
@@ -22,6 +23,10 @@ int main(int argc, char** argv) {
   /** Set up network environment */
   boost::scoped_ptr<NodeEnvironmentInterface> nei(
       CreateNodeEnvironment(argc, argv));
+
+  // Ugly, temporary hack
+  printf("WARNING: New server, query id = %d\n", atoi(argv[argc - 1]));
+  Factory::server = CreateServer(atoi(argv[argc - 1]));
 
   /** Run job */
   WorkerNode worker(nei.get());

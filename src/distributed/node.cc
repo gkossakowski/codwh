@@ -57,10 +57,22 @@ void WorkerNode::packData(vector<Column*> data) {
 int WorkerNode::execPlan(query::Operation *op) {
   printf("Worker[%d] job proto tree:\n%s\n",
       nei->my_node_number(), op->DebugString().c_str());
- // TODO : IMPLEMENT THIS
- Operation* operation = Factory::createOperation(*op);
- delete operation;
- return 0;
+  Operation* operation = Factory::createOperation(*op);
+  FinalOperation* finalOperation = dynamic_cast<FinalOperation*>(operation);
+
+  if (NULL != finalOperation) {
+    while (finalOperation->consume() > 0) {
+    }
+  } else {
+    vector<Column*>* data;
+    do {
+      data = operation->pull();
+      // TODO: IMPLEMENT waiting queue
+    } while ((*data)[0]->size > 0);
+  }
+
+  delete operation;
+  return 0;
 }
 
 void WorkerNode::run() {
