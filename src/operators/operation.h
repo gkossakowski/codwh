@@ -80,5 +80,26 @@ class GroupByOperation : public Operation {
   ~GroupByOperation();
 };
 
+class ShuffleOperation : public Operation {
+  Operation* source;
+  unsigned int receiversCount;
+ public:
+  ShuffleOperation(const query::ShuffleOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+  ~ShuffleOperation();
+};
+
+class UnionOperation : public Operation {
+  vector<int> sources;
+  vector<int> types;
+ public:
+  UnionOperation(const query::UnionOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+};
+
 #endif // OPERATION_H
 

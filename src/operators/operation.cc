@@ -162,3 +162,49 @@ FilterOperation::~FilterOperation() {
 }
 
 // }}}
+
+// ShuffleOperation {{{
+ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
+  source = Factory::createOperation(oper.source());
+  receiversCount = oper.receiverscount();
+}
+
+vector<Column*>* ShuffleOperation::pull() {
+  // TODO: implement
+  return NULL; // shuffle does nit return data
+}
+
+std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
+  output << "shuffleOperation { " << *source;
+  return output << "receiversCount = " << receiversCount << "}\n";
+}
+
+vector<int> ShuffleOperation::getTypes() {
+  return source->getTypes();
+}
+
+ShuffleOperation::~ShuffleOperation() {
+  delete source;
+}
+// }}}
+
+// UnionOperation {{{
+UnionOperation::UnionOperation(const query::UnionOperation& oper) {
+  // TODO: implement
+  types = vector<int>(20, query::ScanOperation_Type_DOUBLE); // fake 
+}
+
+vector<Column*>* UnionOperation::pull() {
+  // TODO: implement
+  return NULL;
+}
+
+std::ostream& UnionOperation::debugPrint(std::ostream& output) {
+  output << "UnionOperation { ";
+  return output << "}\n";
+}
+
+vector<int> UnionOperation::getTypes() {
+  return types;
+}
+// }}}

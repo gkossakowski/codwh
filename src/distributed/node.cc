@@ -54,8 +54,11 @@ void WorkerNode::packData(vector<Column*> data) {
 }
 
 int WorkerNode::execPlan(query::Operation *op) {
-  printf("Worker[%d] job proto tree:\n%s\n", nei->my_node_number(), op->DebugString().c_str());
+  printf("Worker[%d] job proto tree:\n%s\n",
+      nei->my_node_number(), op->DebugString().c_str());
  // TODO : IMPLEMENT THIS
+ Operation* operation = Factory::createOperation(*op);
+ delete operation;
  return 0;
 }
 
