@@ -27,6 +27,9 @@ class Operation : public Node {
   virtual vector<int> getTypes() = 0;
   /** Pull next chunk of data */
   virtual vector<Column*>* pull() = 0;
+  virtual vector< vector<Column*> >* bucketsPull() {
+    assert(false);
+  }
   /** consume output at server */
   int consume();
 };
@@ -86,7 +89,8 @@ class ShuffleOperation : public Operation {
   unsigned int receiversCount;
  public:
   ShuffleOperation(const query::ShuffleOperation& oper);
-  vector<Column*>* pull();
+  vector<Column*>* pull(); // can't use!
+  vector< vector<Column*> >* bucketsPull();
   std::ostream& debugPrint(std::ostream& output);
   vector<int> getTypes();
   ~ShuffleOperation();

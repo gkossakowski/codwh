@@ -170,8 +170,13 @@ ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
 }
 
 vector<Column*>* ShuffleOperation::pull() {
-  // TODO: implement
-  return source->pull();
+  assert(false); // should use ShuffleOperation::bucketsPull()
+}
+
+vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
+  source->pull();
+  // TODO: implement!
+  return NULL;
 }
 
 std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
