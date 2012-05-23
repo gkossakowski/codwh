@@ -158,12 +158,16 @@ message DataRequest {
   required int32 number = 2;
 }
 
+message DataPacket {
+  repeated int32 type = 1;
+  repeated bytes data = 2;
+}
+
 message DataResponse {
   // Author of a request.
   required int32 node = 1;
   required int32 number = 2;
-  required int32 size = 3;
-  required bytes data = 4;
+  required DataPacket data = 3;
 }
 
 message Communication {
