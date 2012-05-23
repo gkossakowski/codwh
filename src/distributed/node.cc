@@ -463,14 +463,14 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes) 
 }
 
 void SchedulerNode::sendJob(query::Operation &op, uint32_t node) {
- query::Communication com;
- const google::protobuf::Reflection *r = com.operation().GetReflection();
- string msg;
+  query::Communication com;
+  const google::protobuf::Reflection *r = com.operation().GetReflection();
+  string msg;
 
- r->Swap(com.mutable_operation(), &op); // breaks `op`, but no need to repair
- com.SerializeToString(&msg);
- nei->SendPacket(node, msg.c_str(), msg.size());
- return ;
+  r->Swap(com.mutable_operation(), &op); // breaks `op`, but no need to repair
+  com.SerializeToString(&msg);
+  nei->SendPacket(node, msg.c_str(), msg.size());
+  return ;
 }
 
 void SchedulerNode::run(const query::Operation &op) {
