@@ -261,7 +261,25 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
   vector<query::Operation> stripes;
   query::Operation op = query;
   if (query.has_scan()) {
-    stripes.push_back(op);
+    query::Operation scanOwnOp;
+    query::ScanOperationOwn& scanOwn = *scanOwnOp.mutable_scan_own();
+    for (int i = 0; i < query.scan().column_size(); i++) {
+      scanOwn.add_column(query.scan().column(i));
+      switch (query.scan().type(i)) {
+        case query::ScanOperation_Type_BOOL:
+          scanOwn.add_type(query::BOOL);
+          break;
+        case query::ScanOperation_Type_INT:
+          scanOwn.add_type(query::INT);
+          break;
+        case query::ScanOperation_Type_DOUBLE:
+          scanOwn.add_type(query::DOUBLE);
+          break;
+        default:
+          assert(false);
+      }
+    }
+    stripes.push_back(scanOwnOp);
   } else if (query.has_compute()) {
     stripes = stripeOperation(query.compute().source());
     query::Operation lastStripe = stripes.back();
