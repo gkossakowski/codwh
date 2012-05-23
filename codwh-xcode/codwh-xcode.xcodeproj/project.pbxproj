@@ -610,8 +610,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					/opt/local/include/,
+					/opt/local/include,
+					"$(SRCROOT)/../src",
 					"$(SRCROOT)/../src/build/",
+					"$(SRCROOT)/../server/",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/opt/local/lib/,
@@ -644,7 +646,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					/opt/local/include/,
+					"$(SRCROOT)/../src",
 					"$(SRCROOT)/../src/build/",
+					"$(SRCROOT)/../server/",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/opt/local/lib/,
