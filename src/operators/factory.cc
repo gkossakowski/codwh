@@ -37,13 +37,13 @@ Factory::createOperation(const query::Operation& operation) {
 }
 
 ColumnProvider*
-Factory::createColumnProvider(int columnId, int type) {
+Factory::createColumnProvider(int columnId, query::ColumnType type) {
   switch (type) {
-    case query::ScanOperation_Type_INT:
+    case query::INT:
       return new ColumnProviderImpl<int>(columnId);
-    case query::ScanOperation_Type_DOUBLE:
+    case query::DOUBLE:
       return new ColumnProviderImpl<double>(columnId);
-    case query::ScanOperation_Type_BOOL:
+    case query::BOOL:
       return new ColumnProviderImpl<char>(columnId);
     default:
       assert(false);
@@ -51,7 +51,7 @@ Factory::createColumnProvider(int columnId, int type) {
 }
 
 Column*
-Factory::createColumnFromType(int type) {
+Factory::createColumnFromType(query::ColumnType type) {
   switch (type) {
     case query::ScanOperation_Type_INT:
       return new ColumnChunk<int>();
@@ -66,7 +66,7 @@ Factory::createColumnFromType(int type) {
 
 // findType {{{
 static int findType(
-    const query::Expression& expression, const vector<int>& providers) {
+    const query::Expression& expression, const vector<query::ColumnType>& providers) {
   switch (expression.operator_()) {
     case query::Expression::COLUMN:
       return providers[expression.column_id()];
@@ -117,7 +117,7 @@ static int findType(
 // createExpressionImpl {{{
 template<class T>
 static Expression* createExpressionImpl(
-    const query::Expression& expression, vector<int>& providers) {
+    const query::Expression& expression, vector<query::ColumnType>& providers) {
   switch (expression.operator_()) {
     case query::Expression::COLUMN:
       return new ExpressionColumn<T>(expression.column_id());
@@ -194,7 +194,7 @@ static Expression* createExpressionImpl(
 
 template<class TL, class TR>
 static Expression* createExpressionLogic(
-    const query::Expression& expression, vector<int>& providers) {
+    const query::Expression& expression, vector<query::ColumnType>& providers) {
   Expression* left =
     Factory::createExpression(expression.children().Get(0), providers);
   Expression* right =
@@ -216,23 +216,23 @@ static Expression* createExpressionLogic(
 
 Expression*
 Factory::createExpression(
-    const query::Expression& expression, vector<int>& providers) {
+    const query::Expression& expression, vector<query::ColumnType>& providers) {
   if (expression.operator_() == query::Expression::GREATER ||
       expression.operator_() == query::Expression::LOWER ||
       expression.operator_() == query::Expression::EQUAL ||
       expression.operator_() == query::Expression::NOT_EQUAL) {
     int leftType = findType(expression.children().Get(0), providers);
     int rightType = findType(expression.children().Get(1), providers);
-    switch (10 * leftType + rightType) {
-      case 11:
+    switch (100 * leftType + rightType) {
+      case (query::INT * 100 + query::INT):
         return createExpressionLogic<int, int>(expression, providers);
-      case 22: 
+      case (query::DOUBLE * 100 + query::DOUBLE): 
         return createExpressionLogic<double, double>(expression, providers);
-      case 12:
+      case (query::INT * 100 + query::DOUBLE):
         return createExpressionLogic<int, double>(expression, providers);
-      case 21:
+      case (query::DOUBLE * 100 + query::INT):
         return createExpressionLogic<double, int>(expression, providers);
-      case 33:
+      case (query::BOOL * 100 + query::BOOL):
         return createExpressionLogic<char, char>(expression, providers);
       default:
         assert(false); // unknown combination

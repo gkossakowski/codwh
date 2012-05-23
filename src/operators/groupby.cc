@@ -29,7 +29,7 @@ GroupByOperation::GroupByOperation(const query::GroupByOperation& oper) {
     }
   }
 
-  vector<int> types = getTypes();
+  vector<query::ColumnType> types = getTypes();
   cache = vector<Column*>(types.size());
   for (unsigned int i = 0 ; i < cache.size() ; ++i) {
     cache[i] = Factory::createColumnFromType(types[i]);
@@ -49,19 +49,19 @@ std::ostream& GroupByOperation::debugPrint(std::ostream& output) {
   return output << "}\n";
 }
 
-vector<int> GroupByOperation::getTypes() {
-  vector<int> sourceTypes = source->getTypes();
-  vector<int> result;
+vector<query::ColumnType> GroupByOperation::getTypes() {
+  vector<query::ColumnType> sourceTypes = source->getTypes();
+  vector<query::ColumnType> result;
   for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
     result.push_back(sourceTypes[groupByColumn[i]]);
   }
   for (unsigned i = 0 ; i < aggregations.size() ; ++i) {
     if (aggregations[i] == -1) {
-      result.push_back(query::ScanOperation_Type_INT);
+      result.push_back(query::INT);
     } else {
-      int type = sourceTypes[aggregations[i]];
-      if (type == query::ScanOperation_Type_BOOL) {
-        result.push_back(query::ScanOperation_Type_INT);
+      query::ColumnType type = sourceTypes[aggregations[i]];
+      if (type == query::BOOL) {
+        result.push_back(query::INT);
       } else {
         result.push_back(type);
       }
@@ -71,7 +71,6 @@ vector<int> GroupByOperation::getTypes() {
 }
 
 vector<int> GroupByOperation::getUsedColumnsId() {
-  vector<int> sourceTypes = source->getTypes();
   set<int> result;
   for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
     result.insert(groupByColumn[i]);

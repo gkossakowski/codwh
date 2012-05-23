@@ -99,7 +99,8 @@ class Packet {
  private:
   vector<char *> columns;
   vector<uint32_t> offsets;
-  vector<int32_t> types;
+  vector<query::ColumnType> types;
+  vector<bool> sentColumns;
   size_t size; /** size in rows */
   size_t capacity; /** maximum capacity in rows */
 

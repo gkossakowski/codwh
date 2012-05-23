@@ -100,9 +100,10 @@ message GroupByOperation {
 }
 
 enum ColumnType {
-  INT = 1;
-  DOUBLE = 2;
-  BOOL = 3;
+  INVALID_TYPE = 0;
+  INT = 1; // has to be compatible with ScanOperation::Type
+  DOUBLE = 2; // has to be compatible with ScanOperation::Type
+  BOOL = 3; // has to be compatible with ScanOperation::Type
   HASH = 4; // There should be exactly one column with that type.
 };
 
