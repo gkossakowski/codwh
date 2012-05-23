@@ -162,3 +162,75 @@ FilterOperation::~FilterOperation() {
 }
 
 // }}}
+
+// ShuffleOperation {{{
+ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
+  source = Factory::createOperation(oper.source());
+  receiversCount = oper.receiverscount();
+}
+
+vector<Column*>* ShuffleOperation::pull() {
+  // TODO: implement
+  return source->pull();
+}
+
+std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
+  output << "shuffleOperation { " << *source;
+  return output << "receiversCount = " << receiversCount << "}\n";
+}
+
+vector<int> ShuffleOperation::getTypes() {
+  // TODO: implement
+  return source->getTypes();
+}
+
+ShuffleOperation::~ShuffleOperation() {
+  delete source;
+}
+// }}}
+
+// UnionOperation {{{
+UnionOperation::UnionOperation(const query::UnionOperation& oper) {
+  // TODO: implement
+  types = vector<int>(20, query::ScanOperation_Type_DOUBLE); // fake 
+}
+
+vector<Column*>* UnionOperation::pull() {
+  // TODO: implement
+  vector<Column*>* tmp = new vector<Column*>;
+  tmp->push_back(new ColumnChunk<double>());
+  return tmp;
+}
+
+std::ostream& UnionOperation::debugPrint(std::ostream& output) {
+  output << "UnionOperation { ";
+  return output << "}\n";
+}
+
+vector<int> UnionOperation::getTypes() {
+  return types;
+}
+// }}}
+
+// FinalOperation {{{
+FinalOperation::FinalOperation(const query::FinalOperation& oper) {
+  source = Factory::createOperation(oper.source());
+}
+
+vector<Column*>* FinalOperation::pull() {
+  return source->pull();
+}
+
+std::ostream& FinalOperation::debugPrint(std::ostream& output) {
+  output << "FinalOperation { " << *source;
+  return output << "}\n";
+}
+
+vector<int> FinalOperation::getTypes() {
+  return source->getTypes();
+}
+
+FinalOperation::~FinalOperation() {
+  delete source;
+}
+// }}}

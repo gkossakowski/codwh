@@ -23,7 +23,7 @@ class Operation : public Node {
  protected:
   vector<Column*> cache;
  public:
-  /** Get return types */
+  /** Get return types, ints are used as constants corresponding to types from ScanOperation */
   virtual vector<int> getTypes() = 0;
   /** Pull next chunk of data */
   virtual vector<Column*>* pull() = 0;
@@ -77,7 +77,39 @@ class GroupByOperation : public Operation {
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
   vector<int> getTypes();
+  vector<int> getUsedColumnsId();
   ~GroupByOperation();
+};
+
+class ShuffleOperation : public Operation {
+  Operation* source;
+  unsigned int receiversCount;
+ public:
+  ShuffleOperation(const query::ShuffleOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+  ~ShuffleOperation();
+};
+
+class UnionOperation : public Operation {
+  vector<int> sources;
+  vector<int> types;
+ public:
+  UnionOperation(const query::UnionOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+};
+
+class FinalOperation : public Operation {
+  Operation* source;
+ public:
+  FinalOperation(const query::FinalOperation& oper);
+  vector<Column*>* pull();
+  std::ostream& debugPrint(std::ostream& output);
+  vector<int> getTypes();
+  ~FinalOperation();
 };
 
 #endif // OPERATION_H

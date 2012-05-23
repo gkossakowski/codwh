@@ -1,6 +1,9 @@
 // Copyright 2012 Google Inc. All Rights Reserved.
 // Author: onufry@google.com (Onufry Wojtaszczyk)
 
+#ifndef DATA_SERVER_H
+#define DATA_SERVER_H
+
 #include <stdint.h>
 
 typedef int32_t int32;
@@ -38,3 +41,5 @@ class Server {
 
 // The query id is the id that comes from the operations proto.
 Server *CreateServer(int query_id, std::string variant);
+
+#endif

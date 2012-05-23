@@ -59,6 +59,7 @@ compute {
           type: INT
           column: 3
           type: BOOL
+          number_of_files: 3;
         }
       }
     }

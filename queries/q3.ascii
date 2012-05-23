@@ -5,6 +5,7 @@ compute {
     scan {
       column: 0
       type: DOUBLE
+      number_of_files: 3;
     }
   }
   expressions {

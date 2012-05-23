@@ -6,9 +6,15 @@
 
 #include <string>
 
-const int DEFAULT_CHUNK_SIZE = 512;
-const int MAX_PACKET_SIZE = 100 * 1024; // TODO : find a good value
+#ifndef TEST_FLAG
+const int DEFAULT_CHUNK_SIZE = 512; // in rows
+const int MAX_PACKET_SIZE = 1000 * 1024; // (in bytes) TODO : find a good value
 const int MAX_OUTPUT_PACKETS = 100; // in packets
+#else
+const int DEFAULT_CHUNK_SIZE = 5;
+const int MAX_PACKET_SIZE = 100;
+const int MAX_OUTPUT_PACKETS = 15;
+#endif
 
 namespace global {
 

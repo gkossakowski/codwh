@@ -50,6 +50,7 @@ message ScanOperation {
   // type of input column[i].
   repeated int32 column = 1;
   repeated Type type = 2;
+  required int32 number_of_files = 3; // The file ids are 0 .. (number_of_files - 1).
 }
 
 // Columns returned are the expressions, indexed in the order given. So after
@@ -98,32 +99,38 @@ message GroupByOperation {
   repeated Aggregation aggregations = 4;
 }
 
-message ScanOperationOwn {
-  enum Type {
-    INT = 1;
-    DOUBLE = 2;
-    BOOL = 3;
-  };
+enum ColumnType {
+  INT = 1;
+  DOUBLE = 2;
+  BOOL = 3;
+  HASH = 4; // There should be exactly one column with that type.
+};
 
+message ScanOperationOwn {
   repeated int32 column = 1;
-  repeated Type type = 2;
+  repeated ColumnType type = 2;
   // List of file-IDs.
   repeated int32 source = 3;
 }
 
 message UnionOperation {
-  // Just like in a ScanOperation.
+  // which columns shuffle is going to serve
   repeated int32 column = 1;
+  // type of columns
+  repeated ColumnType type = 2;
   // Source node-IDs.
   repeated int32 source = 3;
 }
 
 message ShuffleOperation {
+  // exactly the same as in union operation
   required Operation source = 1;
   // Number of shuffle buckets.
   required int32 receiversCount = 2;
-  // We know which columns to select for shuffling and in which order
+  // We know which columns to select for shuffling
   repeated int32 column = 3;
+  // types of columns
+  repeated ColumnType type = 4;
 }
 
 // Send-results-to-server operation.
@@ -151,12 +158,16 @@ message DataRequest {
   required int32 number = 2;
 }
 
+message DataPacket {
+  repeated int32 type = 1;
+  repeated bytes data = 2;
+}
+
 message DataResponse {
   // Author of a request.
   required int32 node = 1;
   required int32 number = 2;
-  required int32 size = 3;
-  required bytes data = 4;
+  required DataPacket data = 3;
 }
 
 message Communication {

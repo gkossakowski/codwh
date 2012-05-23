@@ -22,7 +22,15 @@ Factory::createOperation(const query::Operation& operation) {
     return new FilterOperation(operation.filter());
   } else if (operation.has_group_by()) {
     return new GroupByOperation(operation.group_by());
+  } else if (operation.has_shuffle()) {
+    return new ShuffleOperation(operation.shuffle());
+  } else if (operation.has_union_()) {
+    return new UnionOperation(operation.union_());
+  } else if (operation.has_final()) {
+    return new FinalOperation(operation.final());
   } else {
+    std::cout << "ERROR: unknown operation" <<
+        operation.DebugString() << "\n";
     assert(false);
     return NULL;
   }
