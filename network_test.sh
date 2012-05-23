@@ -31,8 +31,8 @@ for i in `seq 1 $MAX_NUMBER`; do
   PIDS="$PIDS $!"
 done
 
-echo "RUNNING:./src/scheduler 1 queries/q1.ascii 0 $START_PORT $HOSTS &"
-sleep 1
+echo "RUNNING:./src/scheduler $2 $3 0 $START_PORT $HOSTS &"
+sleep 2
 ./src/scheduler $2 $3 0 $START_PORT $HOSTS > "logs/000" &
 PIDS="$PIDS $!"
 

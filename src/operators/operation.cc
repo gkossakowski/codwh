@@ -176,6 +176,7 @@ vector<Column*>* ShuffleOperation::pull() {
 vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
   source->pull();
   // TODO: implement!
+  assert(false);
   return NULL;
 }
 
