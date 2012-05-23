@@ -354,19 +354,19 @@ void SchedulerNode::sendJob(query::Operation &op, uint32_t node) {
 }
 
 void SchedulerNode::run(const query::Operation &op) {
- std::cout << "Scheduling proto: " << op.DebugString() << "\n";
+  std::cout << "Scheduling proto: " << op.DebugString() << "\n";
   int numberOfInputFiles = extractInputFilesNumber(op);
   printf("number of input files: %d\n", numberOfInputFiles);
- vector<query::Operation> *stripes = makeStripes(op);
+  vector<query::Operation> *stripes = makeStripes(op);
   std::cout << "after striping: " << std::endl;
   for (unsigned i=0; i < stripes->size() ; i++) {
     std::cout << "STRIPE " << i << std::endl;
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
- schedule(stripes, nei->nodes_count() - 1);
- delete stripes;
+  schedule(stripes, nei->nodes_count() - 1);
+  delete stripes;
 
- // TODO : switch to a worker mode
- // execPlan(finalOperation);
- return ;
+  // TODO : switch to a worker mode
+  // execPlan(finalOperation);
+  return ;
 }
