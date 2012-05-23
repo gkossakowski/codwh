@@ -35,6 +35,7 @@ class WorkerNode {
   vector< queue<Packet*> > output;
   vector<int> pending_requests;
   vector<int> output_counters;
+  vector<int> consumers_map;
   vector<bool> sent_columns;
 
   /** Execute a first plan from a jobs queue */
@@ -44,6 +45,9 @@ class WorkerNode {
   query::Communication* getMessage(bool blocking);
   /** Parses a communication method and stores contained information */
   void parseMessage(query::Communication *message, bool allow_data);
+  /** Reads a data request from queue, tries to satisfy the consumer and
+   *  schedule job for later if it's not possible. */
+  void parseRequests();
 
   /** Wait until any job occurs */
   void getJob();
@@ -67,6 +71,8 @@ class WorkerNode {
   void packData(vector<Column*> &data, int bucket);
   /** Tries to send accumulated data to a consumer */
   void flushBucket(int bucket);
+  /** Sends EOF messages to consumers */
+  void sendEof();
 
   /** Run worker */
   virtual void run();
@@ -99,7 +105,8 @@ class Packet {
  private:
   vector<char *> columns;
   vector<uint32_t> offsets;
-  vector<int32_t> types;
+  vector<query::ColumnType> types;
+  vector<bool> sentColumns;
   size_t size; /** size in rows */
   size_t capacity; /** maximum capacity in rows */
 

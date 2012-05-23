@@ -5,6 +5,7 @@
 #define GLOBAL_H
 
 #include <string>
+#include "proto/operations.pb.h"
 
 #ifndef TEST_FLAG
 const int DEFAULT_CHUNK_SIZE = 512; // in rows
@@ -19,27 +20,40 @@ const int MAX_OUTPUT_PACKETS = 15;
 namespace global {
 
 template<class T>
-inline int getType() {
+inline query::ColumnType getType() {
   return 0;
 }
 
 template<>
-inline int getType<int>() {
-  return 1;
+inline query::ColumnType getType<int>() {
+  return query::INT;
 }
 
 template<>
-inline int getType<double>() {
-  return 2;
+inline query::ColumnType getType<double>() {
+  return query::DOUBLE;
 }
 
 template<>
-inline int getType<char>() {
-  return 3;
+inline query::ColumnType getType<char>() {
+  return query::BOOL;
 }
 
+inline int getTypeSize(query::ColumnType type_) {
+  switch (type_) {
+    case query::INT:
+      return 4;
+    case query::DOUBLE:
+      return 8;
+    case query::BOOL:
+      return 1;
+    default:
+      assert (false);
+      return 0;
+  }
+}
 
-const int TypeSize[] = { 0, 4, 8, 1 };
+// const int TypeSize[] = { 0, 4, 8, 1 };
 
 
 template<class T>

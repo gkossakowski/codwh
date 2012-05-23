@@ -82,13 +82,29 @@ void WorkerNode::resetOutput(int buckets, vector<bool> &columns) {
  pending_requests.resize(buckets, 0);
  output_counters.resize(0);
  output_counters.resize(buckets, 0);
+ consumers_map.resize(0);
+ consumers_map.resize(buckets, -1);
  full_packets = 0;
+}
+
+void WorkerNode::parseRequests() {
+ int bucket;
+ query::DataRequest *request;
+ 
+ while (requests.size() > 0) {
+  request = requests.back();
+  requests.pop();
+  bucket = request->stripe() % output.size();
+  consumers_map[bucket] = request->node();
+  pending_requests[bucket] += request->number();
+
+  flushBucket(bucket); // try to send data
+  delete request;
+ }
 }
 
 void WorkerNode::packData(vector<Column*> &data, int bucket) {
  queue<Packet*> &buck = output[bucket];
- query::DataRequest *request;
- int buckets_num = output.size();
 
  if (buck.size() == 0 || buck.back()->full)
   buck.push(new Packet(data, sent_columns));
@@ -98,45 +114,69 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
   full_packets++;
  assert(full_packets <= MAX_OUTPUT_PACKETS);
 
- flushBucket(bucket);
-
- /* Probably, the situation below won't occur. */
- while (full_packets == MAX_OUTPUT_PACKETS) {
-  while (requests.size() > 0) {
-   request = requests.back();
-   requests.pop();
-
-   int i = request->node() % buckets_num;
-   pending_requests[i] += request->number();
-   flushBucket(i); // try to send data
-
-   delete request;
-  }
-  getRequest();
+ // read all incoming requests
+ query::Communication *message;
+ while ((message = getMessage(false)) != NULL) {
+  parseMessage(message, false); // we should have all data already
  }
+
+ bool flag;
+ do {
+  parseRequests();
+  flag = (full_packets == MAX_OUTPUT_PACKETS);
+  if (flag)
+   getRequest();
+ } while (flag);
+
+ // finally, try to flush current bucket
+ flushBucket(bucket);
 }
 
 void WorkerNode::flushBucket(int bucket) {
  if (pending_requests[bucket] == 0 || output[bucket].front()->full)
   return;
+ assert(consumers_map[bucket] != -1); // we should know node number from request
 
- query::DataResponse response;
+ query::Communication com;
+ query::DataResponse *response = com.mutable_data_response();
  query::DataPacket *packet;
- const google::protobuf::Reflection *r = response.data().GetReflection();
+ const google::protobuf::Reflection *r = response->data().GetReflection();
  string msg;
- response.set_node(nei->my_node_number());
 
+ response->set_node(nei->my_node_number());
+ // send data while we have a full packet and a pending request
  while (pending_requests[bucket] > 0 && !output[bucket].front()->full) {
   packet = output[bucket].front()->serialize();
-  output_counters[bucket]++;
+  output_counters[bucket]++; // increase packet number counter
 
-  response.set_number(output_counters[bucket]);
-  r->Swap(response.mutable_data(), packet);
-  response.SerializeToString(&msg);
+  response->set_number(output_counters[bucket]); // set number
+  r->Swap(response->mutable_data(), packet); // set data
+  com.SerializeToString(&msg);
+  nei->SendPacket(consumers_map[bucket], msg.c_str(), msg.size()); // send
 
-  nei->SendPacket(bucket, msg.c_str(), msg.size());
-  delete packet;
+  output[bucket].pop(); // remove packet from queue
+  pending_requests[bucket]--; 
+  full_packets--;
+  delete packet; // dump packet
  }
+}
+
+void WorkerNode::sendEof() {
+  query::Communication com;
+  query::DataResponse *response = com.mutable_data_response();
+  string msg;
+
+  response->set_node(nei->my_node_number());
+  response->set_number(-1); // EOF response
+  com.SerializeToString(&msg); // universal message for all consumers
+
+  for (uint32_t i = 0; i < output.size(); i++) {
+    while (consumers_map[i] == -1) { // unknown consumer!
+      getRequest();
+      parseRequests(); // updates the consumer_map while parsing a request
+    }
+    nei->SendPacket(consumers_map[i], msg.c_str(), msg.size());
+  }
 }
 
 int WorkerNode::execPlan(query::Operation *op) {
@@ -149,11 +189,36 @@ int WorkerNode::execPlan(query::Operation *op) {
     while (finalOperation->consume() > 0) {
     }
   } else {
-    vector<Column*>* data;
+    vector< vector<Column*> > *buckets;
+    int buckets_num = 0;
+    int size;
     do {
-      data = operation->pull();
-      // TODO: IMPLEMENT waiting queue
-    } while ((*data)[0]->size > 0);
+      size = 0;
+      // pull buckets
+      buckets = operation->bucketsPull();
+      buckets_num = buckets->size();
+      for (int i = 0; i < buckets_num; i++) {
+        size += (*buckets)[i][0]->size;
+        packData((*buckets)[i], i);
+      }
+    } while (size > 0);
+    
+    // we have all data; try to send it
+    assert(buckets_num > 0);
+    for (int i = 0; i < buckets_num; i++) {
+      if (!output[i].back()->full) { // close packets
+        output[i].back()->full = true;
+        full_packets++;
+      }
+      flushBucket(i);
+    }
+
+    // await for requests as long as everything is sent
+    while (full_packets > 0) {
+      getRequest();
+      parseRequests();
+    }
+    sendEof(); // confirm end of data stream
   }
 
   delete operation;
@@ -213,7 +278,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     // columns needed by group by operations both for keys and values
     vector<int> columns;
     // types of all columns of the source of group by
-    vector<int> types;
+    vector<query::ColumnType> types;
     {
       GroupByOperation* groupByOp = static_cast<GroupByOperation*>(Factory::createOperation(op));
       columns = groupByOp->getUsedColumnsId();
@@ -224,19 +289,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
     for (unsigned int i=0; i < columns.size(); i++) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
-      switch (types[columns[i]]) {
-        case query::ScanOperation_Type_BOOL:
-          shuffle.mutable_shuffle()->add_type(query::BOOL);
-          break;
-        case query::ScanOperation_Type_INT:
-          shuffle.mutable_shuffle()->add_type(query::INT);
-          break;
-        case query::ScanOperation_Type_DOUBLE:
-          shuffle.mutable_shuffle()->add_type(query::DOUBLE);
-          break;
-        default:
-          break;
-      }
+      shuffle.mutable_shuffle()->add_type(types[columns[i]]);
     }
     stripes.push_back(shuffle);
 
@@ -244,19 +297,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     query::UnionOperation* union_ = groupBy.mutable_source()->mutable_union_();
     for (unsigned i = 0; i < columns.size(); i++) {
       union_->add_column(columns[i]);
-      switch (types[columns[i]]) {
-        case query::ScanOperation_Type_BOOL:
-          union_->add_type(query::BOOL);
-          break;
-        case query::ScanOperation_Type_INT:
-          union_->add_type(query::INT);
-          break;
-        case query::ScanOperation_Type_DOUBLE:
-          union_->add_type(query::DOUBLE);
-          break;
-        default:
-          break;
-      }
+      union_->add_type(types[columns[i]]);
     }
 
     query::Operation groupByOp;
@@ -269,31 +310,17 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
   return stripes;
 }
 
-vector<int> getColumnTypes(const query::Operation& opProto) {
+vector<query::ColumnType> getColumnTypes(const query::Operation& opProto) {
   Operation* op = Factory::createOperation(opProto);
-  vector<int> result = op->getTypes();
+  vector<query::ColumnType> result = op->getTypes();
   return result;
 }
 
 void addColumnsAndTypesToShuffle(query::ShuffleOperation& shuffle) {
-  vector<int> types = getColumnTypes(shuffle.source());
+  vector<query::ColumnType> types = getColumnTypes(shuffle.source());
   for (unsigned int i = 0; i < types.size(); i++) {
     shuffle.add_column(i);
-    // TODO establish one message for types that we'll use everywhere
-    // so we can get rid of those tiring conversions
-    switch (types[i]) {
-      case query::ScanOperation_Type_BOOL:
-        shuffle.add_type(query::BOOL);
-        break;
-      case query::ScanOperation_Type_INT:
-        shuffle.add_type(query::INT);
-        break;
-      case query::ScanOperation_Type_DOUBLE:
-        shuffle.add_type(query::DOUBLE);
-        break;
-      default:
-        assert(false);
-    }
+    shuffle.add_type(types[i]);
   }
 }
 
@@ -463,14 +490,15 @@ Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
  size_t row_size = 0;
  columns.resize(view.size(), NULL);
  offsets.resize(view.size(), 0);
- types.resize(view.size(), 0);
+ types.resize(view.size(), query::INVALID_TYPE);
+ sentColumns = sent_columns;
 
  // collect row size and types
  for (uint32_t i = 0; i < view.size(); i++) {
   types[i] = view[i]->getType();
-  if (sent_columns[i]){
-    row_size += global::TypeSize[types[i]];
-  } else types[i] *= -1; // omited column
+  if (sentColumns[i]){
+    row_size += global::getTypeSize(types[i]);
+  } // otherwise we omit it
  }
 
  // compute maximum capacity
@@ -479,7 +507,7 @@ Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
  // allocate space and reset data counters;
  for (uint32_t i = 0; i < view.size(); i++)
   if (sent_columns[i])
-   columns[i] = new char[capacity * global::TypeSize[types[i]]];
+   columns[i] = new char[capacity * global::getTypeSize(types[i])];
 }
 
 /** Tries to consume a view. If it's too much data - returns false. */
@@ -487,7 +515,7 @@ void Packet::consume(vector<Column*> view){
  if (full) assert(false); // should check if it's full before calling!
 
  for (uint32_t i = 0; i < view.size(); i++)
-  if (types[i] > 0)
+  if (sentColumns[i])
    offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
  size += static_cast<size_t>(view[0]->size);
 
@@ -500,7 +528,7 @@ query::DataPacket* Packet::serialize() {
 
  for (uint32_t i = 0; i < types.size(); i++) {
   packet->add_type(abs(types[i]));
-  if (types[i] > 0)
+  if (sentColumns[i])
    packet->add_data(columns[i], offsets[i]);
   else packet->add_data(string()); // empty string
  }

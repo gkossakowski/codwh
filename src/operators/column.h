@@ -20,7 +20,7 @@ class Column {
  public:
   Column(): size(0) { }
   int size;
-  virtual int getType() = 0;
+  virtual query::ColumnType getType() = 0;
   virtual size_t transfuse(void *dst) = 0;
   virtual void consume(int column_index, Server* server) = 0;
   virtual void filter(Column* cond, Column* result) = 0;
@@ -33,7 +33,7 @@ template<class T>
 class ColumnChunk : public Column {
  public:
   T chunk[DEFAULT_CHUNK_SIZE];
-  int getType();
+  query::ColumnType getType();
   size_t transfuse(void *dst);
   void consume(int column_index, Server* server);
   void fill(any_t* any, int idx);
@@ -58,7 +58,7 @@ class ColumnChunk : public Column {
 // typeSize, transfuse {{{
 
 template<class T>
-inline int
+inline query::ColumnType
 ColumnChunk<T>::getType(){
   return global::getType<T>();
 }
@@ -156,7 +156,7 @@ ColumnChunk<char>::take(const any_t& any, int idx) {
 class ColumnProvider : public Node {
   public:
     virtual Column* pull() = 0;
-    virtual int getType() = 0;
+    virtual query::ColumnType getType() = 0;
 };
 
 template<class T>
@@ -168,7 +168,7 @@ class ColumnProviderImpl : public ColumnProvider {
 
   inline Column* pull();
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<T>();
   }
 

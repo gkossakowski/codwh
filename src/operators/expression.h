@@ -17,7 +17,7 @@ using std::string;
 class Expression : public Node {
  public:
   virtual Column* pull(vector<Column*>* sources) = 0;
-  virtual int getType() = 0;
+  virtual query::ColumnType getType() = 0;
 };
 
 template<class T>
@@ -38,7 +38,7 @@ class Expression1 : public Expression {
     return &cache;
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<T>();
   }
 
@@ -67,7 +67,7 @@ class Expression2 : public Expression {
     return &cache;
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<T>();
   }
 
@@ -92,7 +92,7 @@ class ExpressionColumn : public Expression {
         << ": " << global::getTypeName<T>() << ")";
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<T>();
   }
 };
@@ -132,7 +132,7 @@ class ExpressionConstant : public Expression {
     return output << "ExpressionConstant(" << val << ")";
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<T>();
   }
 };
@@ -443,7 +443,7 @@ class ExpressionLog : public Expression {
     return output << "}";
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<double>();
   }
 };
@@ -511,7 +511,7 @@ class ExpressionLogic : public Expression {
     return output << "ExpressionLogic { " << *left << " " << *right << "}\n";
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<char>();
   }
 };
@@ -666,7 +666,7 @@ has_true_and_false:
     return output << *left << " : " << *right << "}\n";
   }
 
-  int getType() {
+  query::ColumnType getType() {
     return global::getType<T>();
   }
 };

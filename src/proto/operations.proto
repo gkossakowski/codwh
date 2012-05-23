@@ -100,9 +100,10 @@ message GroupByOperation {
 }
 
 enum ColumnType {
-  INT = 1;
-  DOUBLE = 2;
-  BOOL = 3;
+  INVALID_TYPE = 0;
+  INT = 1; // has to be compatible with ScanOperation::Type
+  DOUBLE = 2; // has to be compatible with ScanOperation::Type
+  BOOL = 3; // has to be compatible with ScanOperation::Type
   HASH = 4; // There should be exactly one column with that type.
 };
 
@@ -152,10 +153,12 @@ message Operation {
 }
 
 message DataRequest {
-  /// Author of a request.
+  // Author of a request.
   required int32 node = 1;
+  // Logical number of author's job
+  required int32 stripe = 2;
   // Number of packages which we're able to process at the moment.
-  required int32 number = 2;
+  required int32 number = 3;
 }
 
 message DataPacket {
