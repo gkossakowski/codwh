@@ -110,8 +110,8 @@ enum ColumnType {
 message ScanOperationOwn {
   repeated int32 column = 1;
   repeated ColumnType type = 2;
-  // List of file-IDs.
-  repeated int32 source = 3;
+  // file-IDs
+  required int32 source = 3;
 }
 
 message UnionOperation {
