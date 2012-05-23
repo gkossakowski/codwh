@@ -37,9 +37,9 @@ sleep 1
 PIDS="$PIDS $!"
 
 echo $PIDS
-sleep 1
+sleep 2
 
-cat `find ./logs`
+cat `find ./logs -type f | sort`
 
 killall worker
 for job in `jobs -p`; do
