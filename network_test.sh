@@ -27,17 +27,17 @@ PIDS=""
 for i in `seq 1 $MAX_NUMBER`; do
    PORT=`expr $START_PORT + $i`
   echo "RUNNING:./src/worker $i $PORT $HOSTS $2 &"
-  ./src/worker $i $PORT $HOSTS $2 > "logs/$i" & # we will remove query um later
+  ./src/worker $i $PORT $HOSTS $2 > "logs/`printf \"%03d\" $i`" & # we will remove query um later
   PIDS="$PIDS $!"
 done
 
 echo "RUNNING:./src/scheduler 1 queries/q1.ascii 0 $START_PORT $HOSTS &"
 sleep 1
-./src/scheduler $2 $3 0 $START_PORT $HOSTS > "logs/0" &
+./src/scheduler $2 $3 0 $START_PORT $HOSTS > "logs/000" &
 PIDS="$PIDS $!"
 
 echo $PIDS
-sleep 2
+sleep 1
 
 cat `find ./logs -type f | sort`
 
