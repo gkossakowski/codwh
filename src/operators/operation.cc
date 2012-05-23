@@ -25,7 +25,7 @@ ScanOperation::ScanOperation(const query::ScanOperation& oper) {
 
   for (int i = 0 ; i < n ; ++i) {
     providers[i] = Factory::createColumnProvider(
-        oper.column().Get(i), oper.type().Get(i));
+        oper.column().Get(i), (query::ColumnType) oper.type().Get(i));
   }
 }
 
@@ -37,9 +37,9 @@ ScanOperation::pull() {
   return &cache;
 }
 
-vector<int>
+vector<query::ColumnType>
 ScanOperation::getTypes() {
-  vector<int> result(providers.size());
+  vector<query::ColumnType> result(providers.size());
   for (unsigned i = 0 ; i < providers.size() ; ++i) {
     result[i] = providers[i]->getType();
   }
@@ -71,7 +71,7 @@ ComputeOperation::ComputeOperation(const query::ComputeOperation& oper) {
   expressions = vector<Expression*>(n);
   cache = vector<Column*>(n);
 
-  vector<int> types = source->getTypes();
+  vector<query::ColumnType> types = source->getTypes();
   for (int i = 0 ; i < n ; ++i) {
     expressions[i] = Factory::createExpression(
         oper.expressions().Get(i), types);
@@ -86,8 +86,8 @@ vector<Column*>* ComputeOperation::pull() {
   return &cache;
 }
 
-vector<int> ComputeOperation::getTypes() {
-  vector<int> result(expressions.size());
+vector<query::ColumnType> ComputeOperation::getTypes() {
+  vector<query::ColumnType> result(expressions.size());
   for (unsigned i = 0 ; i < expressions.size() ; ++i) {
     result[i] = expressions[i]->getType();
   }
@@ -114,7 +114,7 @@ ComputeOperation::~ComputeOperation() {
 // FilterOperation {{{
 FilterOperation::FilterOperation(const query::FilterOperation& oper) {
   source = Factory::createOperation(oper.source());
-  vector<int> types = source->getTypes();
+  vector<query::ColumnType> types = source->getTypes();
   result = vector<Column*>(types.size());
   condition = Factory::createExpression(oper.expression(), types);
 
@@ -148,7 +148,7 @@ std::ostream& FilterOperation::debugPrint(std::ostream& output) {
   return output << "condition = " << *condition << "}\n";
 }
 
-vector<int> FilterOperation::getTypes() {
+vector<query::ColumnType> FilterOperation::getTypes() {
   return source->getTypes();
 }
 
@@ -184,7 +184,7 @@ std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
   return output << "receiversCount = " << receiversCount << "}\n";
 }
 
-vector<int> ShuffleOperation::getTypes() {
+vector<query::ColumnType> ShuffleOperation::getTypes() {
   // TODO: implement
   return source->getTypes();
 }
@@ -197,7 +197,7 @@ ShuffleOperation::~ShuffleOperation() {
 // UnionOperation {{{
 UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   // TODO: implement
-  types = vector<int>(20, query::ScanOperation_Type_DOUBLE); // fake 
+  types = vector<query::ColumnType>(20, query::DOUBLE); // fake 
 }
 
 vector<Column*>* UnionOperation::pull() {
@@ -212,7 +212,7 @@ std::ostream& UnionOperation::debugPrint(std::ostream& output) {
   return output << "}\n";
 }
 
-vector<int> UnionOperation::getTypes() {
+vector<query::ColumnType> UnionOperation::getTypes() {
   return types;
 }
 // }}}
@@ -231,7 +231,7 @@ std::ostream& FinalOperation::debugPrint(std::ostream& output) {
   return output << "}\n";
 }
 
-vector<int> FinalOperation::getTypes() {
+vector<query::ColumnType> FinalOperation::getTypes() {
   return source->getTypes();
 }
 

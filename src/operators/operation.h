@@ -24,7 +24,7 @@ class Operation : public Node {
   vector<Column*> cache;
  public:
   /** Get return types, ints are used as constants corresponding to types from ScanOperation */
-  virtual vector<int> getTypes() = 0;
+  virtual vector<query::ColumnType> getTypes() = 0;
   /** Pull next chunk of data */
   virtual vector<Column*>* pull() = 0;
   virtual vector< vector<Column*> >* bucketsPull() {
@@ -39,7 +39,7 @@ class ScanOperation : public Operation {
  public:
   ScanOperation(const query::ScanOperation& oper);
   vector<Column*>* pull();
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
   std::ostream& debugPrint(std::ostream& output);
   ~ScanOperation();
 };
@@ -50,7 +50,7 @@ class ComputeOperation : public Operation {
  public:
   ComputeOperation(const query::ComputeOperation& oper);
   vector<Column*>* pull();
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
   std::ostream& debugPrint(std::ostream& output);
   ~ComputeOperation();
 };
@@ -63,7 +63,7 @@ class FilterOperation : public Operation {
   FilterOperation(const query::FilterOperation& oper);
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
   ~FilterOperation();
 };
 
@@ -79,7 +79,7 @@ class GroupByOperation : public Operation {
   GroupByOperation(const query::GroupByOperation& oper);
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
   vector<int> getUsedColumnsId();
   ~GroupByOperation();
 };
@@ -92,18 +92,18 @@ class ShuffleOperation : public Operation {
   vector<Column*>* pull(); // can't use!
   vector< vector<Column*> >* bucketsPull();
   std::ostream& debugPrint(std::ostream& output);
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
   ~ShuffleOperation();
 };
 
 class UnionOperation : public Operation {
   vector<int> sources;
-  vector<int> types;
+  vector<query::ColumnType> types;
  public:
   UnionOperation(const query::UnionOperation& oper);
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
 };
 
 class FinalOperation : public Operation {
@@ -112,7 +112,7 @@ class FinalOperation : public Operation {
   FinalOperation(const query::FinalOperation& oper);
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
-  vector<int> getTypes();
+  vector<query::ColumnType> getTypes();
   ~FinalOperation();
 };
 

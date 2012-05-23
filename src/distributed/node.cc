@@ -278,7 +278,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     // columns needed by group by operations both for keys and values
     vector<int> columns;
     // types of all columns of the source of group by
-    vector<int> types;
+    vector<query::ColumnType> types;
     {
       GroupByOperation* groupByOp = static_cast<GroupByOperation*>(Factory::createOperation(op));
       columns = groupByOp->getUsedColumnsId();
@@ -334,14 +334,14 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
   return stripes;
 }
 
-vector<int> getColumnTypes(const query::Operation& opProto) {
+vector<query::ColumnType> getColumnTypes(const query::Operation& opProto) {
   Operation* op = Factory::createOperation(opProto);
-  vector<int> result = op->getTypes();
+  vector<query::ColumnType> result = op->getTypes();
   return result;
 }
 
 void addColumnsAndTypesToShuffle(query::ShuffleOperation& shuffle) {
-  vector<int> types = getColumnTypes(shuffle.source());
+  vector<query::ColumnType> types = getColumnTypes(shuffle.source());
   for (unsigned int i = 0; i < types.size(); i++) {
     shuffle.add_column(i);
     // TODO establish one message for types that we'll use everywhere
@@ -528,14 +528,15 @@ Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
  size_t row_size = 0;
  columns.resize(view.size(), NULL);
  offsets.resize(view.size(), 0);
- types.resize(view.size(), 0);
+ types.resize(view.size(), query::INVALID_TYPE);
+ sentColumns = sent_columns;
 
  // collect row size and types
  for (uint32_t i = 0; i < view.size(); i++) {
   types[i] = view[i]->getType();
-  if (sent_columns[i]){
-    row_size += global::TypeSize[types[i]];
-  } else types[i] *= -1; // omited column
+  if (sentColumns[i]){
+    row_size += global::getTypeSize(types[i]);
+  } // otherwise we omit it
  }
 
  // compute maximum capacity
@@ -544,7 +545,7 @@ Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
  // allocate space and reset data counters;
  for (uint32_t i = 0; i < view.size(); i++)
   if (sent_columns[i])
-   columns[i] = new char[capacity * global::TypeSize[types[i]]];
+   columns[i] = new char[capacity * global::getTypeSize(types[i])];
 }
 
 /** Tries to consume a view. If it's too much data - returns false. */
@@ -552,7 +553,7 @@ void Packet::consume(vector<Column*> view){
  if (full) assert(false); // should check if it's full before calling!
 
  for (uint32_t i = 0; i < view.size(); i++)
-  if (types[i] > 0)
+  if (sentColumns[i])
    offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
  size += static_cast<size_t>(view[0]->size);
 
@@ -565,7 +566,7 @@ query::DataPacket* Packet::serialize() {
 
  for (uint32_t i = 0; i < types.size(); i++) {
   packet->add_type(abs(types[i]));
-  if (types[i] > 0)
+  if (sentColumns[i])
    packet->add_data(columns[i], offsets[i]);
   else packet->add_data(string()); // empty string
  }

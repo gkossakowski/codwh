@@ -21,10 +21,10 @@ class Factory {
  public:
   static Server* server;
   static Operation* createOperation(const query::Operation& operation);
-  static ColumnProvider* createColumnProvider(int columnId, int type);
-  static Column* createColumnFromType(int type);
+  static ColumnProvider* createColumnProvider(int columnId, query::ColumnType type);
+  static Column* createColumnFromType(query::ColumnType type);
   static Expression* createExpression(
-      const query::Expression& expression, vector<int>& providers);
+      const query::Expression& expression, vector<query::ColumnType>& providers);
 };
 
 #endif
