@@ -98,6 +98,7 @@ class ShuffleOperation : public Operation {
 
 class UnionOperation : public Operation {
   vector<int> sources;
+  vector<int> columns;
   vector<query::ColumnType> types;
  public:
   UnionOperation(const query::UnionOperation& oper);

@@ -196,8 +196,28 @@ ShuffleOperation::~ShuffleOperation() {
 
 // UnionOperation {{{
 UnionOperation::UnionOperation(const query::UnionOperation& oper) {
-  // TODO: implement
-  types = vector<query::ColumnType>(20, query::DOUBLE); // fake 
+  assert(oper.column_size() == oper.type_size());
+
+  sources = vector<int>(oper.source_size());
+  for (unsigned i = 0 ; i < sources.size() ; ++i) {
+    sources[i] = (query::ColumnType) oper.source().Get(i);
+  }
+
+  columns = vector<int>(oper.column_size());
+  int maxx = -1;
+  for (unsigned i = 0 ; i < columns.size() ; ++i) {
+    columns[i] = (query::ColumnType) oper.column().Get(i);
+    if (columns[i] > maxx)
+      maxx = columns[i];
+  }
+
+  int typeSize = maxx + 1;
+
+  types = vector<query::ColumnType>(typeSize);
+  unsigned n = oper.type_size();
+  for (unsigned i = 0 ; i < n ; ++i) {
+    types[columns[i]] = (query::ColumnType) oper.type().Get(i);
+  }
 }
 
 vector<Column*>* UnionOperation::pull() {
