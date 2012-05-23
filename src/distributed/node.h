@@ -90,7 +90,7 @@ class SchedulerNode : public WorkerNode {
   /** Slice query into stripes */
   vector<query::Operation>* makeStripes(query::Operation query);
   /** Fill in and send stripes for a given number of nodes */
-  void schedule(vector<query::Operation> *stripe, uint32_t nodes);
+  void schedule(vector<query::Operation> *stripe, uint32_t nodes, int numberOfFiles);
   /** Send job to a given node, the given job object is destroyed */
   void sendJob(query::Operation &op, uint32_t node);
 

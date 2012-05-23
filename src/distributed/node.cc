@@ -442,7 +442,35 @@ int extractInputFilesNumber(const query::Operation& query) {
   }
 }
 
-void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes) {
+/*
+ * Assigns file to ScanOperationOwn. This method should be called with
+ * the first stripe only.
+ *
+ * This method mutates passed stripe.
+ */
+void assignFileToScan(query::Operation& stripe, int fileToScan) {
+  if (stripe.has_scan()) {
+    // stripes should never have plain scan
+    assert(false);
+  } else if (stripe.has_compute()) {
+    assignFileToScan(*stripe.mutable_compute()->mutable_source(), fileToScan);
+  } else if (stripe.has_filter()) {
+    assignFileToScan(*stripe.mutable_filter()->mutable_source(), fileToScan);
+  } else if (stripe.has_group_by()) {
+    assignFileToScan(*stripe.mutable_group_by()->mutable_source(), fileToScan);
+  } else if (stripe.has_scan_own()) {
+    stripe.mutable_scan_own()->set_source(fileToScan);
+  } else if (stripe.has_shuffle()) {
+    assignFileToScan(*stripe.mutable_shuffle()->mutable_source(), fileToScan);
+  } else if (stripe.has_union_()) {
+    // union is the source, probably the wrong stripe passed
+    assert(false);
+  } else if (stripe.has_final()) {
+    assignFileToScan(*stripe.mutable_final()->mutable_source(), fileToScan);
+  }
+}
+
+void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, int numberOfFiles) {
   int nodesPerStripe = nodes / stripes->size();
   // we do not hamdle situation when nodes < stripes->size() yet
   assert(nodesPerStripe > 0);
@@ -501,7 +529,7 @@ void SchedulerNode::run(const query::Operation &op) {
     std::cout << "STRIPE " << i << std::endl;
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
-  schedule(stripes, nei->nodes_count() - 1);
+  schedule(stripes, nei->nodes_count() - 1, numberOfInputFiles);
   delete stripes;
 
   // TODO : switch to a worker mode
