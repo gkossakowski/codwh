@@ -196,7 +196,15 @@ int WorkerNode::execPlan(query::Operation *op) {
       size = 0;
       // pull buckets
       buckets = operation->bucketsPull();
-      buckets_num = buckets->size();
+      if (buckets_num == 0) {
+        // first iteration; we have to reset output buffer
+        buckets_num = buckets->size();
+        vector<bool> columns; // TODO: mask unused columns
+        columns.resize(buckets_num, true);
+        resetOutput(buckets_num, columns);
+      }
+
+
       for (int i = 0; i < buckets_num; i++) {
         size += (*buckets)[i][0]->size;
         packData((*buckets)[i], i);
