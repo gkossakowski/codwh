@@ -115,12 +115,18 @@ message ScanOperationOwn {
 }
 
 message UnionOperation {
+  message Source {
+    // id of the node we should ask for stripe
+    required int32 node = 1;
+    // the stripe we want data from
+    required int32 stripe = 2;
+  }
   // which columns shuffle is going to serve
   repeated int32 column = 1;
   // type of columns
   repeated ColumnType type = 2;
   // Source node-IDs.
-  repeated int32 source = 3;
+  repeated Source source = 3;
 }
 
 message ShuffleOperation {

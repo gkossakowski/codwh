@@ -385,27 +385,30 @@ vector<query::Operation>* SchedulerNode::makeStripes(query::Operation query) {
  *
  * This method mutates passed stripe.
  */
-void assignNodesToUnion(query::Operation& stripe, int nodeStart, int nodeEnd) {
+void assignNodesToUnion(query::Operation& stripe, const vector< std::pair<int, int> > & stripeIds) {
   if (stripe.has_scan()) {
     // stripes should never have plain scan
     assert(false);
   } else if (stripe.has_compute()) {
-    assignNodesToUnion(*stripe.mutable_compute()->mutable_source(), nodeStart, nodeEnd);
+    assignNodesToUnion(*stripe.mutable_compute()->mutable_source(), stripeIds);
   } else if (stripe.has_filter()) {
-    assignNodesToUnion(*stripe.mutable_filter()->mutable_source(), nodeStart, nodeEnd);
+    assignNodesToUnion(*stripe.mutable_filter()->mutable_source(), stripeIds);
   } else if (stripe.has_group_by()) {
-    assignNodesToUnion(*stripe.mutable_group_by()->mutable_source(), nodeStart, nodeEnd);
+    assignNodesToUnion(*stripe.mutable_group_by()->mutable_source(), stripeIds);
   } else if (stripe.has_scan_own()) {
     // only the first stripe can have scan own operation and this method
     // should not be called for the first stripe
+    assert(false);
   } else if (stripe.has_shuffle()) {
-    assignNodesToUnion(*stripe.mutable_shuffle()->mutable_source(), nodeStart, nodeEnd);
+    assignNodesToUnion(*stripe.mutable_shuffle()->mutable_source(), stripeIds);
   } else if (stripe.has_union_()) {
-    for (int i=nodeStart; i<nodeEnd; i++) {
-      stripe.mutable_union_()->add_source(i);
+    for (unsigned int i = 0; i < stripeIds.size(); i++) {
+      query::UnionOperation_Source* src = stripe.mutable_union_()->add_source();
+      src->set_node(stripeIds[i].first);
+      src->set_stripe(stripeIds[i].second);
     }
   } else if (stripe.has_final()) {
-    assignNodesToUnion(*stripe.mutable_final()->mutable_source(), nodeStart, nodeEnd);
+    assignNodesToUnion(*stripe.mutable_final()->mutable_source(), stripeIds);
   }
 }
 
@@ -471,44 +474,72 @@ void assignFileToScan(query::Operation& stripe, int fileToScan) {
 }
 
 void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, int numberOfFiles) {
-  int nodesPerStripe = nodes / stripes->size();
-  // we do not hamdle situation when nodes < stripes->size() yet
+  int nodesPerStripe = nodes / 2;
+  // we don't handle situation when we have one worker only
   assert(nodesPerStripe > 0);
-  int nodeStart = 1;
-  int nodeEnd = nodeStart + nodesPerStripe;
+  // we divide workers into two groups that will be used for two consecutive layers of stripes
+  vector<int> nodeIds;
+  vector<int> nodeIdsNext;
+  for (int i = 1; i <= nodesPerStripe; i++) {
+    nodeIds.push_back(i);
+  }
+  for (int i = nodesPerStripe+1; i <= nodes; i++) {
+    nodeIdsNext.push_back(i);
+  }
+
+  printf("nodeIds: ");
+  for (unsigned int i = 0; i < nodeIds.size(); i++) {
+    printf("%d, ", nodeIds[i]);
+  }
+  printf("\n");
+  printf("nodeIdsNext: ");
+  for (unsigned int i = 0; i < nodeIdsNext.size(); i++) {
+    printf("%d, ", nodeIdsNext[i]);
+  }
+  printf("\n");
+
+  vector< std::pair<int, int> > previousStripeIds;
+  int stripeId = 0;
   // process the first stripe
   {
     query::Operation& firstStripe = stripes->front();
-    assignReceiversCount(firstStripe, nodesPerStripe);
-    for (int i = nodeStart; i < nodeEnd; i++) {
-      sendJob(firstStripe, i);
+    assignReceiversCount(firstStripe, nodeIdsNext.size());
+    for (int i = 0; i < numberOfFiles; i++) {
+      query::Operation stripeForFile = firstStripe; // make copy
+      assignFileToScan(stripeForFile, i);
+      int nodeId = nodeIds[i%nodeIds.size()];
+      sendJob(stripeForFile, nodeId, stripeId);
+      previousStripeIds.push_back(std::make_pair(nodeId, stripeId));
+      stripeId++;
     }
   }
+  std::swap(nodeIds, nodeIdsNext);
+  // process inner stripes
   for (unsigned i = 1; i + 1 < stripes->size(); i++) {
     query::Operation& stripe = (*stripes)[i];
-    // assign nodes to union that were sent jobs to
-    // in a previous iteration
-    assignNodesToUnion(stripe, nodeStart, nodeEnd);
-    nodeStart = 1+i*nodesPerStripe;
-    nodeEnd = 1+(i+1)*nodesPerStripe;
-    assignReceiversCount(stripe, nodesPerStripe);
-    for (int j = nodeStart; j < nodeEnd; i++) {
-      sendJob(stripe, j);
+    vector< std::pair<int, int> > stripeIds;
+    // assign to union nodes and stripes that were
+    // sent in the previous iteration
+    assignNodesToUnion(stripe, previousStripeIds);
+    assignReceiversCount(stripe, nodeIdsNext.size());
+    for (unsigned int j = 0; j < nodeIds.size(); j++) {
+      int nodeId = nodeIds[j%nodeIds.size()];
+      sendJob(stripe, nodeId, stripeId);
+      stripeIds.push_back(std::make_pair(nodeId, stripeId));
+      stripeId++;
     }
+    previousStripeIds = stripeIds;
+    std::swap(nodeIds, nodeIdsNext);
   }
   // schedule the last stripe, use all the remaining workers
   {
     query::Operation& lastStripe = stripes->back();
-    assignNodesToUnion(lastStripe, nodeStart, nodeEnd);
-    nodeStart = nodeEnd;
-    nodeEnd = nodes+1;
-    for (int i = nodeStart; i < nodeEnd; i++) {
-      sendJob(lastStripe, i);
-    }
+    assignNodesToUnion(lastStripe, previousStripeIds);
+    sendJob(lastStripe, 0, stripeId);
   }
 }
 
-void SchedulerNode::sendJob(query::Operation &op, uint32_t node) {
+void SchedulerNode::sendJob(query::Operation &op, uint32_t node, int stripeId) {
   query::Communication com;
   const google::protobuf::Reflection *r = com.operation().GetReflection();
   string msg;
