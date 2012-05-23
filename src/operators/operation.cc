@@ -200,13 +200,13 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
 
   sources = vector<int>(oper.source_size());
   for (unsigned i = 0 ; i < sources.size() ; ++i) {
-    sources[i] = (query::ColumnType) oper.source().Get(i);
+    sources[i] = oper.source().Get(i).node(); // TODO: we need to save stripe
   }
 
   columns = vector<int>(oper.column_size());
   int maxx = -1;
   for (unsigned i = 0 ; i < columns.size() ; ++i) {
-    columns[i] = (query::ColumnType) oper.column().Get(i);
+    columns[i] = oper.column().Get(i);
     if (columns[i] > maxx)
       maxx = columns[i];
   }
