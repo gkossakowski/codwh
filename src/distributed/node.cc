@@ -277,6 +277,33 @@ void assignReceiversCount(query::Operation& stripe, int receiversCount) {
   stripe.mutable_shuffle()->set_receiverscount(receiversCount);
 }
 
+int extractInputFilesNumber(const query::Operation& query) {
+  if (query.has_scan()) {
+    return query.scan().number_of_files();
+  } else if (query.has_compute()) {
+    return extractInputFilesNumber(query.compute().source());
+  } else if (query.has_filter()) {
+    return extractInputFilesNumber(query.filter().source());
+  } else if (query.has_group_by()) {
+    return extractInputFilesNumber(query.group_by().source());
+  } else if (query.has_scan_own()) {
+    // if we have scan_own it means that the original scan operation has been
+    // erased and there's no way to extract number of input files
+    assert(false);
+  } else if (query.has_shuffle()) {
+    return extractInputFilesNumber(query.shuffle().source());
+  } else if (query.has_union_()) {
+    // if query has union as its source then it means we cannot extract number
+    // of files (probably the wrong stripe has been passed)
+    assert(false);
+  } else if (query.has_final()) {
+    return extractInputFilesNumber(query.final().source());
+  } else {
+    // unknown case
+    assert(false);
+  }
+}
+
 void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes) {
   int nodesPerStripe = nodes / stripes->size();
   // we do not hamdle situation when nodes < stripes->size() yet
@@ -328,6 +355,8 @@ void SchedulerNode::sendJob(query::Operation &op, uint32_t node) {
 
 void SchedulerNode::run(const query::Operation &op) {
  std::cout << "Scheduling proto: " << op.DebugString() << "\n";
+  int numberOfInputFiles = extractInputFilesNumber(op);
+  printf("number of input files: %d\n", numberOfInputFiles);
  vector<query::Operation> *stripes = makeStripes(op);
   std::cout << "after striping: " << std::endl;
   for (unsigned i=0; i < stripes->size() ; i++) {
