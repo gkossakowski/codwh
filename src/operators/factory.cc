@@ -53,11 +53,11 @@ Factory::createColumnProvider(int columnId, query::ColumnType type) {
 Column*
 Factory::createColumnFromType(query::ColumnType type) {
   switch (type) {
-    case query::ScanOperation_Type_INT:
+    case query::INT:
       return new ColumnChunk<int>();
-    case query::ScanOperation_Type_DOUBLE:
+    case query::DOUBLE:
       return new ColumnChunk<double>();
-    case query::ScanOperation_Type_BOOL:
+    case query::BOOL:
       return new ColumnChunk<char>();
     default:
       assert(false);

@@ -224,19 +224,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
     for (unsigned int i=0; i < columns.size(); i++) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
-      switch (types[columns[i]]) {
-        case query::ScanOperation_Type_BOOL:
-          shuffle.mutable_shuffle()->add_type(query::BOOL);
-          break;
-        case query::ScanOperation_Type_INT:
-          shuffle.mutable_shuffle()->add_type(query::INT);
-          break;
-        case query::ScanOperation_Type_DOUBLE:
-          shuffle.mutable_shuffle()->add_type(query::DOUBLE);
-          break;
-        default:
-          break;
-      }
+      shuffle.mutable_shuffle()->add_type(types[columns[i]]);
     }
     stripes.push_back(shuffle);
 
@@ -244,19 +232,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     query::UnionOperation* union_ = groupBy.mutable_source()->mutable_union_();
     for (unsigned i = 0; i < columns.size(); i++) {
       union_->add_column(columns[i]);
-      switch (types[columns[i]]) {
-        case query::ScanOperation_Type_BOOL:
-          union_->add_type(query::BOOL);
-          break;
-        case query::ScanOperation_Type_INT:
-          union_->add_type(query::INT);
-          break;
-        case query::ScanOperation_Type_DOUBLE:
-          union_->add_type(query::DOUBLE);
-          break;
-        default:
-          break;
-      }
+      union_->add_type(types[columns[i]]);
     }
 
     query::Operation groupByOp;
@@ -279,21 +255,7 @@ void addColumnsAndTypesToShuffle(query::ShuffleOperation& shuffle) {
   vector<query::ColumnType> types = getColumnTypes(shuffle.source());
   for (unsigned int i = 0; i < types.size(); i++) {
     shuffle.add_column(i);
-    // TODO establish one message for types that we'll use everywhere
-    // so we can get rid of those tiring conversions
-    switch (types[i]) {
-      case query::ScanOperation_Type_BOOL:
-        shuffle.add_type(query::BOOL);
-        break;
-      case query::ScanOperation_Type_INT:
-        shuffle.add_type(query::INT);
-        break;
-      case query::ScanOperation_Type_DOUBLE:
-        shuffle.add_type(query::DOUBLE);
-        break;
-      default:
-        assert(false);
-    }
+    shuffle.add_type(types[i]);
   }
 }
 
