@@ -524,7 +524,9 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
     assignReceiversCount(stripe, nodeIdsNext.size());
     for (unsigned int j = 0; j < nodeIds.size(); j++) {
       int nodeId = nodeIds[j%nodeIds.size()];
-      sendJob(stripe, nodeId, stripeId);
+      // make local copy of stripe because sendJob destroys its input data
+      query::Operation localStripe = stripe;
+      sendJob(localStripe, nodeId, stripeId);
       stripeIds.push_back(std::make_pair(nodeId, stripeId));
       stripeId++;
     }
@@ -533,7 +535,7 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   }
   // schedule the last stripe, use all the remaining workers
   {
-    query::Operation& lastStripe = stripes->back();
+    query::Operation lastStripe = stripes->back();
     assignNodesToUnion(lastStripe, previousStripeIds);
     sendJob(lastStripe, 0, stripeId);
   }
