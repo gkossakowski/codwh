@@ -540,6 +540,7 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
 }
 
 void SchedulerNode::sendJob(query::Operation &op, uint32_t node, int stripeId) {
+  printf("Send stripe[%d] to worker[%d]\n%s\n", stripeId, node, op.DebugString().c_str());
   query::Communication com;
   const google::protobuf::Reflection *r = com.operation().GetReflection();
   string msg;
