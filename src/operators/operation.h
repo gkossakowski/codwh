@@ -92,6 +92,8 @@ class ShuffleOperation : public Operation {
   std::vector<int> columns;
   std::vector<query::ColumnType> columnTypes;
   std::vector<int> hashColumns;
+  vector< vector<Column*> > buckets;
+  Column* columnsHash;
  public:
   ShuffleOperation(const query::ShuffleOperation& oper);
   vector<Column*>* pull(); // can't use!

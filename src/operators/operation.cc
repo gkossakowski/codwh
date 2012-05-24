@@ -177,17 +177,58 @@ ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
   for (int i = 0; i < oper.hash_column_size(); i++) {
     hashColumns.push_back(oper.hash_column(i));
   }
+  buckets = vector< vector<Column*> >(receiversCount);
+  for (unsigned int i = 0; i < buckets.size(); i++) {
+    buckets[i] = std::vector<Column*>(columnTypes.size());
+    for (int j = 0; j < columnTypes.size(); j++) {
+      buckets[i][j] = Factory::createColumnFromType(columnTypes[j]);
+    }
+  }
+  columnsHash = Factory::createColumnFromType(query::HASH);
 }
 
 vector<Column*>* ShuffleOperation::pull() {
   assert(false); // should use ShuffleOperation::bucketsPull()
 }
 
+void hashSourceColumns(const vector<Column*>* sourceColumns, vector<int> which,
+                 Column* columnsHash) {
+  assert(columnsHash->getType() == query::HASH);
+  int size = (*sourceColumns)[which[0]]->size;
+  columnsHash->size = size;
+  // zero the hash column
+  for (int i = 0; i < size; i++) {
+    any_t zero;
+    memset(&zero, 0, sizeof(any_t));
+    columnsHash->take(zero, i);
+  }
+  for (unsigned int i = 0; i < which.size(); i++) {
+    (*sourceColumns)[which[i]]->hash(columnsHash);
+  }
+}
+
 vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
-  source->pull();
-  // TODO: implement!
-  assert(false);
-  return NULL;
+  vector<Column*>* sourceColumns = source->pull();
+  // zero column sizes in all buckets
+  for (unsigned int i = 0; i < receiversCount; i++) {
+    for (unsigned int j = 0; j < buckets[i].size(); j++) {
+      buckets[i][j]->size = 0;
+    }
+  }
+  hashSourceColumns(sourceColumns, hashColumns, columnsHash);
+  size_t* hashes = static_cast<ColumnChunk<size_t>*>(columnsHash)->chunk;
+  for (int i = 0; i < columnsHash->size; i++) {
+    int bucketNumber = hashes[i] % receiversCount;
+    vector<Column*>* bucket = &buckets[bucketNumber];
+    any_t data;
+    for (unsigned int j = 0; i < bucket->size(); j++) {
+      (*sourceColumns)[j]->fill(&data, i);
+      Column* col = (*bucket)[j];
+      col->take(data, col->size);
+      col->size++;
+    }
+  }
+  return &buckets;
 }
 
 std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
@@ -196,8 +237,7 @@ std::ostream& ShuffleOperation::debugPrint(std::ostream& output) {
 }
 
 vector<query::ColumnType> ShuffleOperation::getTypes() {
-  // TODO: implement
-  return source->getTypes();
+  return columnTypes;
 }
 
 ShuffleOperation::~ShuffleOperation() {
