@@ -29,6 +29,8 @@ class Column {
   virtual void fill(any_t* any, int idx) = 0;
   virtual void addTo(any_t* any, int idx) = 0;
   virtual void take(const any_t& any, int idx) = 0;
+  // zero the contents of the column
+  virtual void zero() = 0;
 };
 
 template<class T>
@@ -102,6 +104,14 @@ ColumnChunk<int>::take(const any_t& any, int idx) {
 
 template<>
 inline void
+ColumnChunk<int>::zero() {
+  for (int i = 0; i < size; i++) {
+    chunk[i] = 0;
+  }
+}
+
+template<>
+inline void
 ColumnChunk<double>::consume(int column_index, Server* server) {
   server->ConsumeDoubles(column_index, size, &chunk[0]);
 }
@@ -122,6 +132,14 @@ template<>
 inline void
 ColumnChunk<double>::take(const any_t& any, int idx) {
   chunk[idx] = any.double_;
+}
+
+template<>
+inline void
+ColumnChunk<double>::zero() {
+  for (int i = 0; i < size; i++) {
+    chunk[i] = 0.0;
+  }
 }
 
 template<>
@@ -156,6 +174,14 @@ ColumnChunk<char>::take(const any_t& any, int idx) {
 
 template<>
 inline void
+ColumnChunk<char>::zero() {
+  for (int i = 0; i < size/8; i++) {
+    chunk[i] = 0;
+  }
+}
+
+template<>
+inline void
 ColumnChunk<size_t>::consume(int column_index, Server* server) {
   assert(false);
 }
@@ -176,6 +202,14 @@ template<>
 inline void
 ColumnChunk<size_t>::take(const any_t& any, int idx) {
   chunk[idx] = any.hash;
+}
+
+template<>
+inline void
+ColumnChunk<size_t>::zero() {
+  for (int i = 0; i < size; i++) {
+    chunk[i] = 0;
+  }
 }
 // }}}
 
