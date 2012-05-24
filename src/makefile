@@ -7,7 +7,8 @@ OBJS=build/proto.o build/server.o \
 		 build/node_environment/libnode_environment.a \
 	 	 build/utils/libutils.a \
 	 	 build/netio/libnetio.a \
-		 build/distributed_node.o 
+		 build/distributed_node.o \
+		 build/distributed_scheduler.o 
 NET_OBJS= build/proto.o \
 		 build/operators/node.o \
 		 build/groupby.o \
@@ -16,7 +17,8 @@ NET_OBJS= build/proto.o \
 		 build/node_environment/libnode_environment.a \
 	 	 build/utils/libutils.a \
 	 	 build/netio/libnetio.a \
-		 build/distributed_node.o 
+		 build/distributed_node.o \
+		 build/distributed_scheduler.o
 		 
 LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 
@@ -59,6 +61,10 @@ build/proto/operations.pb.cc: proto/operations.proto
 	protoc $< --cpp_out build/
 
 build/distributed_node.o: distributed/node.cc distributed/node.h  build/proto.o
+	mkdir -p build/
+	${CC} -c -o $@ $<
+
+build/distributed_scheduler.o: distributed/scheduler.cc distributed/node.h  build/proto.o
 	mkdir -p build/
 	${CC} -c -o $@ $<
 

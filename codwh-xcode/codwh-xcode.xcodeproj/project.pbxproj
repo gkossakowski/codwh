@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		31125AD8156E698900481D9B /* scheduler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 31125AD7156E698900481D9B /* scheduler.cc */; };
 		312E7F731569260000E2AD66 /* distributed_node.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 312E7F2F1569260000E2AD66 /* distributed_node.o */; };
 		312E7F741569260000E2AD66 /* groupby.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 312E7F301569260000E2AD66 /* groupby.o */; };
 		312E7F751569260000E2AD66 /* libnetio.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 312E7F321569260000E2AD66 /* libnetio.a */; };
@@ -73,6 +74,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		31125AD7156E698900481D9B /* scheduler.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scheduler.cc; sourceTree = "<group>"; };
 		312E7F2F1569260000E2AD66 /* distributed_node.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = distributed_node.o; sourceTree = "<group>"; };
 		312E7F301569260000E2AD66 /* groupby.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = groupby.o; sourceTree = "<group>"; };
 		312E7F321569260000E2AD66 /* libnetio.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libnetio.a; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 			isa = PBXGroup;
 			children = (
 				312E7F471569260000E2AD66 /* node.cc */,
+				31125AD7156E698900481D9B /* scheduler.cc */,
 				312E7F481569260000E2AD66 /* node.h */,
 			);
 			path = distributed;
@@ -472,6 +475,7 @@
 				312E7F8F1569260000E2AD66 /* server.cc in Sources */,
 				312E7F901569260000E2AD66 /* server_real.cc in Sources */,
 				312E7F911569260000E2AD66 /* ip_address.cc in Sources */,
+				31125AD8156E698900481D9B /* scheduler.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
