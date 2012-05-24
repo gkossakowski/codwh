@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <queue>
 #include <tr1/unordered_map>
 #include "node.h"
 #include "column.h"
@@ -102,6 +103,7 @@ class UnionOperation : public Operation {
   vector<int> sourcesStripe;
   vector<int> columns;
   vector<query::ColumnType> types;
+  std::queue<vector<Column*>*> cache;
   bool firstPull;
   std::tr1::unordered_map<int, int> nodeToStripe;
  public:

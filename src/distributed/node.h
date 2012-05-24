@@ -33,7 +33,8 @@ class WorkerNode {
     NodeEnvironmentInterface *nei;
     queue<query::Communication::Stripe *> jobs;
     queue<query::DataRequest *> requests;
-    int stripe;
+    queue<query::DataRequest *> delayed_requests;
+    queue<query::DataResponse *> responses;
 
     /** Input buffer */
     map<int32_t, vector<int32_t> > sources;
@@ -49,7 +50,6 @@ class WorkerNode {
     vector<int> pending_requests;
     vector<int> output_counters;
     vector<int> consumers_map;
-    vector<bool> sent_columns;
 
     /** Execute a first plan from a jobs queue */
     int execPlan(query::Operation *op);
@@ -70,10 +70,11 @@ class WorkerNode {
 
   public:
     WorkerNode(NodeEnvironmentInterface *nei);
+    int stripe;
 
     /** Reset output buffer for a given number of buckets and a boolmask *
      *  of sent columns.                                                 */
-    void resetOutput(int buckets, vector<bool> &columns);
+    void resetOutput(int buckets);
     /** Pack given data and eventually send to a consumer. Blocks if buffer is *
       * full. */
     void packData(vector<Column*> &data, int bucket);
@@ -119,13 +120,12 @@ class Packet {
     vector<char *> columns;
     vector<uint32_t> offsets;
     vector<query::ColumnType> types;
-    vector<bool> sentColumns;
     size_t size; /** size in rows */
     size_t capacity; /** maximum capacity in rows */
 
   public:
     bool full; /** only Packet should write to this! */
-    Packet(vector<Column*> &view, vector<bool> &sent_columns);
+    Packet(vector<Column*> &view);
     Packet(const char* data, size_t data_len);
 
     void consume(vector<Column*> view);

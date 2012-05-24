@@ -234,7 +234,8 @@ vector<Column*>* UnionOperation::pull() {
     for (unsigned i = 0 ; i < sourcesNode.size() ; ++i) {
       query::DataRequest request;
       request.set_node(sourcesNode[i]);
-      request.set_stripe(sourcesStripe[i]);
+      request.set_provider_stripe(sourcesStripe[i]);
+      request.set_consumer_stripe(global::worker->stripe);
       request.set_number(1); // TODO: set it more reasonable
       global::worker->send(&request);
     }
@@ -251,7 +252,8 @@ vector<Column*>* UnionOperation::pull() {
       if (dataResponse.number() > 0) {
         query::DataRequest request;
         request.set_node(dataResponse.node());
-        request.set_stripe(nodeToStripe[dataResponse.node()]);
+        request.set_provider_stripe(nodeToStripe[dataResponse.node()]);
+	request.set_consumer_stripe(global::worker->stripe);
         request.set_number(1); // TODO: set it more reasonable
         global::worker->send(&request);
       }

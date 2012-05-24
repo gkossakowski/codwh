@@ -166,9 +166,11 @@ message DataRequest {
   // Author of a request.
   required int32 node = 1;
   // Logical number of author's job
-  required int32 stripe = 2;
+  required int32 consumer_stripe = 2;
+  // Logical number of recipent's job
+  required int32 provider_stripe = 3;
   // Number of packages which we're able to process at the moment.
-  required int32 number = 3;
+  required int32 number = 4;
 }
 
 message DataPacket {

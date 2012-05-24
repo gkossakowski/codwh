@@ -42,8 +42,8 @@ void WorkerNode::parseMessage(query::Communication *message, bool allow_data) {
     }
   } else if (message->has_data_request()) {
     requests.push(message->release_data_request());
-  } else if (allow_data && message->has_data_response()){
-    // TODO : consume data
+  } else if (allow_data && message->has_data_response()) {
+    responses.push(message->release_data_response());
   } else assert(false);
 
   delete message;
@@ -74,11 +74,10 @@ void WorkerNode::getRequest() {
   return ;
 }
 
-void WorkerNode::resetOutput(int buckets, vector<bool> &columns) {
+void WorkerNode::resetOutput(int buckets) {
   for (uint32_t i = 0; i < output.size(); i++)
     if (output[i].size() != 0) assert(false); // calling during processing is forbidden
 
-  sent_columns.swap(columns);
   output.resize(0); // drop current objects (just in case)
   output.resize(buckets);
   pending_requests.resize(0);
@@ -97,7 +96,14 @@ void WorkerNode::parseRequests() {
   while (requests.size() > 0) {
     request = requests.back();
     requests.pop();
-    bucket = request->stripe() % output.size();
+    if (request->provider_stripe() != stripe) {
+      // future stripe, save for later
+      assert(request->provider_stripe() > stripe);
+      delayed_requests.push(request);
+      continue;
+    }
+
+    bucket = request->consumer_stripe() % output.size();
     consumers_map[bucket] = request->node();
     pending_requests[bucket] += request->number();
 
@@ -110,7 +116,7 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
   queue<Packet*> &buck = output[bucket];
 
   if (buck.size() == 0 || buck.back()->full)
-    buck.push(new Packet(data, sent_columns));
+    buck.push(new Packet(data));
   buck.back()->consume(data);
 
   if (buck.back()->full)
@@ -209,8 +215,7 @@ int WorkerNode::execPlan(query::Operation *op) {
         // first iteration; we have to reset output buffer
         buckets_num = buckets->size();
         vector<bool> columns; // TODO: mask unused columns
-        columns.resize(buckets_num, true);
-        resetOutput(buckets_num, columns);
+        resetOutput(buckets_num);
       }
 
 
@@ -251,6 +256,7 @@ void WorkerNode::run() {
     stripe = st->stripe();
     execPlan(st->mutable_operation());
     jobs.pop();
+    std::swap(requests, delayed_requests);
   };
   return ;
 }
@@ -606,21 +612,18 @@ void SchedulerNode::run(const query::Operation &op) {
 }
 
 
-Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
+Packet::Packet(vector<Column*> &view)
   : size(0), full(false)
 {
   size_t row_size = 0;
   columns.resize(view.size(), NULL);
   offsets.resize(view.size(), 0);
   types.resize(view.size(), query::INVALID_TYPE);
-  sentColumns = sent_columns;
 
   // collect row size and types
   for (uint32_t i = 0; i < view.size(); i++) {
     types[i] = view[i]->getType();
-    if (sentColumns[i]){
-      row_size += global::getTypeSize(types[i]);
-    } // otherwise we omit it
+    row_size += global::getTypeSize(types[i]);
   }
 
   // compute maximum capacity
@@ -628,8 +631,7 @@ Packet::Packet(vector<Column*> &view, vector<bool> &sent_columns)
 
   // allocate space and reset data counters;
   for (uint32_t i = 0; i < view.size(); i++)
-    if (sent_columns[i])
-      columns[i] = new char[capacity * global::getTypeSize(types[i])];
+    columns[i] = new char[capacity * global::getTypeSize(types[i])];
 }
 
 /** Tries to consume a view. If it's too much data - returns false. */
@@ -637,8 +639,7 @@ void Packet::consume(vector<Column*> view){
   if (full) assert(false); // should check if it's full before calling!
 
   for (uint32_t i = 0; i < view.size(); i++)
-    if (sentColumns[i])
-      offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
+    offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
   size += static_cast<size_t>(view[0]->size);
 
   if (capacity - size < static_cast<size_t>(DEFAULT_CHUNK_SIZE))
@@ -650,9 +651,7 @@ query::DataPacket* Packet::serialize() {
 
   for (uint32_t i = 0; i < types.size(); i++) {
     packet->add_type(abs(types[i]));
-    if (sentColumns[i])
-      packet->add_data(columns[i], offsets[i]);
-    else packet->add_data(string()); // empty string
+    packet->add_data(columns[i], offsets[i]);
   }
   return packet;
 }
