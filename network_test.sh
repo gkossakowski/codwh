@@ -32,12 +32,12 @@ for i in `seq 1 $MAX_NUMBER`; do
 done
 
 echo "RUNNING:./src/scheduler $2 $3 0 $START_PORT $HOSTS &"
-sleep 1
+sleep 2
 ./src/scheduler $2 $3 0 $START_PORT $HOSTS &> "logs/000" &
 PIDS="$PIDS $!"
 
 echo $PIDS
-sleep 3
+sleep 2
 
 cat `find ./logs -type f | sort`
 

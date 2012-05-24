@@ -206,8 +206,9 @@ void WorkerNode::sendEof() {
 }
 
 int WorkerNode::execPlan(query::Operation *op) {
-  printf("Worker[%d] stripe[%d] job proto tree:\n%s\n",
+  printf("Worker[%d] stripe[%d] job proto tree:\n%s",
          nei->my_node_number(), stripe, op->DebugString().c_str());
+  std::cout << std::endl; // ugly buffer flush
   Operation* operation = Factory::createOperation(*op);
   FinalOperation* finalOperation = dynamic_cast<FinalOperation*>(operation);
 
