@@ -34,7 +34,6 @@ class WorkerNode {
     queue<query::Communication::Stripe *> jobs;
     queue<query::DataRequest *> requests;
     queue<query::DataRequest *> delayed_requests;
-    queue<query::DataResponse *> responses;
 
     /** Input buffer */
     map<int32_t, vector<int32_t> > sources;
@@ -62,6 +61,9 @@ class WorkerNode {
     void getJob();
     /** Wait until any data request occurs */
     void getRequest();
+    /** Wait until any data response occurs */
+    void getResponse();
+
 
     /** Tries to send accumulated data to a consumer */
     void flushBucket(int bucket);
@@ -70,6 +72,7 @@ class WorkerNode {
 
   public:
     WorkerNode(NodeEnvironmentInterface *nei);
+    queue<query::DataResponse *> responses;
     int stripe;
 
     /** Reset output buffer for a given number of buckets and a boolmask *

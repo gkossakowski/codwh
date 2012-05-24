@@ -5,6 +5,7 @@
 #define COLUMN_H
 
 #include <cassert>
+#include <cmath>
 
 #include "filter.h"
 #include "factory.h"
@@ -200,6 +201,18 @@ ColumnProviderImpl<char>::pull() {
   columnCache.size =
     Factory::server->GetBitBools(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
+}
+
+
+template <class T>
+inline ColumnChunk<T>*
+deserializeChunk(int from_row, const char bytes[], size_t rows) {
+  ColumnChunk<T> *col = new ColumnChunk<T>();
+  size_t type_size = global::getTypeSize(col->getType());
+  size_t from_byte = from_row * type_size;
+  col->size = rows;
+  std::copy(bytes + from_byte, bytes + from_byte + rows * type_size, col->chunk);
+  return col;
 }
 
 

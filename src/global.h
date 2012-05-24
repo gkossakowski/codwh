@@ -53,9 +53,6 @@ inline int getTypeSize(query::ColumnType type_) {
   }
 }
 
-// const int TypeSize[] = { 0, 4, 8, 1 };
-
-
 template<class T>
 inline std::string getTypeName() {
   return "(unknown)";

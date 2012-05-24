@@ -74,6 +74,17 @@ void WorkerNode::getRequest() {
   return ;
 }
 
+void WorkerNode::getResponse() {
+  std::cout << "Awaiting for data request" << std::endl;
+  query::Communication *message;
+
+  while (responses.size() == 0) {
+    message = getMessage(true);
+    parseMessage(message, true);
+  }
+  return ;
+}
+
 void WorkerNode::resetOutput(int buckets) {
   for (uint32_t i = 0; i < output.size(); i++)
     if (output[i].size() != 0) assert(false); // calling during processing is forbidden
@@ -300,7 +311,7 @@ query::DataPacket* Packet::serialize() {
   query::DataPacket *packet = new query::DataPacket();
 
   for (uint32_t i = 0; i < types.size(); i++) {
-    packet->add_type(abs(types[i]));
+    packet->add_type(types[i]);
     packet->add_data(columns[i], offsets[i]);
   }
   return packet;

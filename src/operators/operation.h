@@ -105,10 +105,13 @@ class UnionOperation : public Operation {
   vector<int> sourcesNode;
   vector<int> sourcesStripe;
   vector<int> columns;
+  uint32_t finished;
   vector<query::ColumnType> types;
   std::queue<vector<Column*>*> cache;
   bool firstPull;
   std::tr1::unordered_map<int, int> nodeToStripe;
+  void consume(query::DataResponse *response);
+  vector<Column*> eof;
  public:
   UnionOperation(const query::UnionOperation& oper);
   vector<Column*>* pull();

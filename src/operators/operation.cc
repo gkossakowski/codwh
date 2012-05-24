@@ -234,6 +234,10 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   for (unsigned i = 0 ; i < n ; ++i) {
     types[columns[i]] = (query::ColumnType) oper.type().Get(i);
   }
+
+  Column *col = new ColumnChunk<int>(); // TODO: implement dummy to save time on allocation
+  col->size = 0;
+  eof.push_back(col);
 }
 
 vector<Column*>* UnionOperation::pull() {
@@ -251,43 +255,74 @@ vector<Column*>* UnionOperation::pull() {
   }
 
   // preparing new data
-  query::Communication* message;
-  bool hasRow = false;
-  while (!hasRow && (message = global::worker->getMessage(true)) != NULL) {
-    if (message->has_data_response()) {
-      // ask for more
-      query::DataResponse dataResponse = message->data_response();
-      if (dataResponse.number() > 0) {
-        query::DataRequest request;
-        request.set_node(dataResponse.node());
-        request.set_provider_stripe(nodeToStripe[dataResponse.node()]);
-	request.set_consumer_stripe(global::worker->stripe);
-        request.set_number(1); // TODO: set it more reasonable
-        global::worker->send(&request);
-      }
+  query::DataResponse* dataResponse;
+  while (!cache.size() == 0) {
+    dataResponse = global::worker->responses.front();
+    global::worker->responses.pop();
 
-      assert(dataResponse.data().data_size() == dataResponse.data().type_size());
-      int n = dataResponse.data().data_size();
-      for (int i = 0 ; i < n ; ++i) {
-        // TODO parse it
-        Packet packet(dataResponse.data().data().Get(i).c_str(),
-            1 /* TODO: I don't know what should be passed */ );
-        // TODO: save it in cache
-      }
-
-      // TODO: check (potentially set hasRow = true)
-
+    // ask for more
+    if (dataResponse->number() > 0) {
+      query::DataRequest request;
+      request.set_node(dataResponse->node());
+      request.set_provider_stripe(nodeToStripe[dataResponse->node()]);
+      request.set_consumer_stripe(global::worker->stripe);
+      request.set_number(1); // TODO: set it more reasonable
+      global::worker->send(&request);
     } else {
-      // store future requests
-      global::worker->parseMessage(message, false);
+      finished++; // got EOF
     }
+
+    assert(dataResponse->data().data_size() == dataResponse->data().type_size());
+    consume(dataResponse);
+
+    if (finished == sourcesNode.size())
+      return &eof;
   }
 
-  
-  // TODO: implement
-  vector<Column*>* tmp = new vector<Column*>;
-  tmp->push_back(new ColumnChunk<double>());
-  return tmp;
+  // ask cache
+  vector<Column*> *data = cache.front();
+  cache.pop();
+  return data;
+  // TODO: chunk deallocation
+}
+
+void UnionOperation::consume(query::DataResponse *response) {
+  int from_row = 0;
+  int size = response->data().data(0).size();
+             global::getTypeSize(response->data().type(0));
+  int chunk_size;
+
+
+  query::DataPacket *packet;
+  vector<Column*> *chunk;
+  Column *col;
+
+  while (from_row < size) {
+    chunk = new vector<Column*>;
+    int ix = 0;
+
+    chunk_size = std::min(DEFAULT_CHUNK_SIZE, size - from_row);
+
+    for (uint32_t i = 0; i < types.size(); i++) {
+      while (ix != types[i]) { // add dummy column
+        col = new ColumnChunk<int>();
+        col->size = chunk_size;
+        chunk->push_back(col);
+        ix++;
+      }
+      packet = response->mutable_data();
+      if (types[i] == query::INT)
+        col = deserializeChunk<int>(from_row, packet->data(i).c_str(), chunk_size);
+      else if (types[i] == query::DOUBLE)
+        col = deserializeChunk<double>(from_row, packet->data(i).c_str(), chunk_size);
+      else if (types[i] == query::BOOL)
+        col = deserializeChunk<char>(from_row, packet->data(i).c_str(), chunk_size);
+      else assert(false);
+      chunk->push_back(col);
+    }
+    cache.push(chunk);
+  }
+  from_row += DEFAULT_CHUNK_SIZE;
 }
 
 std::ostream& UnionOperation::debugPrint(std::ostream& output) {

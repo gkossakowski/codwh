@@ -174,7 +174,7 @@ message DataRequest {
 }
 
 message DataPacket {
-  repeated int32 type = 1;
+  repeated ColumnType type = 1;
   repeated bytes data = 2;
 }
 
