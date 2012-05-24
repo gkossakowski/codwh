@@ -303,11 +303,14 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
 
     // columns needed by group by operations both for keys and values
     vector<int> columns;
+    // columns used for hashing, subset of `columns`
+    vector<int> keyColumns;
     // types of all columns of the source of group by
     vector<query::ColumnType> types;
     {
       GroupByOperation* groupByOp = static_cast<GroupByOperation*>(Factory::createOperation(op));
       columns = groupByOp->getUsedColumnsId();
+      keyColumns = groupByOp->getKeyColumnsId();
       types = Factory::createOperation(groupBy.source())->getTypes();
     }
 
@@ -316,6 +319,9 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     for (unsigned int i=0; i < columns.size(); i++) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
       shuffle.mutable_shuffle()->add_type(types[columns[i]]);
+    }
+    for (unsigned int i = 0 ; i < keyColumns.size(); i++) {
+      shuffle.mutable_shuffle()->add_hash_column(keyColumns[i]);
     }
     stripes.push_back(shuffle);
 

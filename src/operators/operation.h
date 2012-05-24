@@ -80,6 +80,7 @@ class GroupByOperation : public Operation {
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
   vector<query::ColumnType> getTypes();
+  vector<int> getKeyColumnsId();
   vector<int> getUsedColumnsId();
   ~GroupByOperation();
 };

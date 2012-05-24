@@ -138,6 +138,10 @@ message ShuffleOperation {
   repeated int32 column = 3;
   // types of columns
   repeated ColumnType type = 4;
+  // specifies which columns should be used for hashing and bucketing
+  // this is a subset of the `columns` field
+  // it might be empty only if `receiversCount` = 1
+  repeated int32 hash_column = 5;
 }
 
 // Send-results-to-server operation.

@@ -70,6 +70,14 @@ vector<query::ColumnType> GroupByOperation::getTypes() {
   return result;
 }
 
+std::vector<int> GroupByOperation::getKeyColumnsId() {
+  vector<int> result;
+  for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
+    result.push_back(groupByColumn[i]);
+  }
+  return result;
+}
+
 vector<int> GroupByOperation::getUsedColumnsId() {
   set<int> result;
   for (unsigned i = 0 ; i < groupByColumn.size() ; ++i) {
