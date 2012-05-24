@@ -15,6 +15,7 @@ union any_t {
   int int32;
   double double_;
   bool boolean;
+  size_t hash;
 };
 
 class Column {
@@ -151,6 +152,30 @@ ColumnChunk<char>::take(const any_t& any, int idx) {
   } else {
     chunk[idx / 8] &= ~(1 << (idx & 7)); 
   }
+}
+
+template<>
+inline void
+ColumnChunk<size_t>::consume(int column_index, Server* server) {
+  assert(false);
+}
+
+template<>
+inline void
+ColumnChunk<size_t>::fill(any_t* any, int idx) {
+  any->hash = chunk[idx];
+}
+
+template<>
+inline void
+ColumnChunk<size_t>::addTo(any_t* any, int idx) {
+  any->hash += chunk[idx];
+}
+
+template<>
+inline void
+ColumnChunk<size_t>::take(const any_t& any, int idx) {
+  chunk[idx] = any.hash;
 }
 // }}}
 

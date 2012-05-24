@@ -59,6 +59,8 @@ Factory::createColumnFromType(query::ColumnType type) {
       return new ColumnChunk<double>();
     case query::BOOL:
       return new ColumnChunk<char>();
+    case query::HASH:
+      return new ColumnChunk<size_t>();
     default:
       assert(false);
   }
