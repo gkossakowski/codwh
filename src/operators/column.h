@@ -10,6 +10,7 @@
 #include "filter.h"
 #include "factory.h"
 #include "global.h"
+#include <boost/functional/hash.hpp>
 
 union any_t {
   int int32;
@@ -31,6 +32,7 @@ class Column {
   virtual void take(const any_t& any, int idx) = 0;
   // zero the contents of the column
   virtual void zero() = 0;
+  virtual void hash(Column* into) = 0;
 };
 
 template<class T>
@@ -43,6 +45,14 @@ class ColumnChunk : public Column {
   void fill(any_t* any, int idx);
   void addTo(any_t* any, int idx);
   void take(const any_t& any, int idx);
+  void zero();
+  void hash(Column* into) {
+    assert(into->getType() == query::HASH);
+    ColumnChunk<size_t>* intoCasted = static_cast<ColumnChunk<size_t>*>(into);
+    for (int i = 0; i < size; i++) {
+      boost::hash_combine(intoCasted->chunk[i], chunk[i]);
+    }
+  }
   void filter(Column* cond, Column* res) {
     ColumnChunk<char>* condition = static_cast<ColumnChunk<char>*>(cond);
     ColumnChunk<T>* result = static_cast<ColumnChunk<T>*>(res);
