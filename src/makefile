@@ -3,7 +3,11 @@ CC=g++ -O2 -Wall -ggdb ${INC} ${FLAGS}
 OBJS=build/proto.o build/server.o \
 		 build/operators/node.o build/groupby.o \
 		 build/operators/factory.o \
-		 build/operators/operation.o
+		 build/operators/operation.o \
+		 build/node_environment/libnode_environment.a \
+	 	 build/utils/libutils.a \
+	 	 build/netio/libnetio.a \
+		 build/distributed_node.o 
 NET_OBJS= build/proto.o \
 		 build/operators/node.o \
 		 build/groupby.o \
@@ -33,7 +37,7 @@ NET_LIBS=${LIBS} ${BOOST_THREAD} ${BOOST_SYSTEM}
 all: exec_plan scheduler worker
 
 exec_plan: main.cc ${OBJS}
-	${CC} ${OBJS} $< ${LIBS} -o $@
+	${CC} ${OBJS} $< ${LIBS} ${NET_LIBS} -o $@
 
 build/operators/%.o: operators/%.cc operators/%.h operators/column.h
 	mkdir -p build/operators

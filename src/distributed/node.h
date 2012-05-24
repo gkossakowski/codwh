@@ -19,6 +19,11 @@ using std::pair;
 /** packet size in bytes */
 
 class Packet;
+class WorkerNode;
+
+namespace global {
+  extern WorkerNode* worker;
+}
 
 class WorkerNode {
   private:
@@ -49,10 +54,6 @@ class WorkerNode {
     /** Execute a first plan from a jobs queue */
     int execPlan(query::Operation *op);
 
-    /** Gets a communication message from network interface */
-    query::Communication* getMessage(bool blocking);
-    /** Parses a communication method and stores contained information */
-    void parseMessage(query::Communication *message, bool allow_data);
     /** Reads a data request from queue, tries to satisfy the consumer and
      *  schedule job for later if it's not possible. */
     void parseRequests();
@@ -68,12 +69,7 @@ class WorkerNode {
     void sendEof();
 
   public:
-    WorkerNode(NodeEnvironmentInterface *nei) : nei(nei) {};
-
-    /** Set data sources, reset input buffer */
-    void setSource(vector< pair<int32_t, int32_t> > &source);
-    /** Get data from any source */
-    vector<Column*> pull(int32_t number);
+    WorkerNode(NodeEnvironmentInterface *nei);
 
     /** Reset output buffer for a given number of buckets and a boolmask *
      *  of sent columns.                                                 */
@@ -84,6 +80,14 @@ class WorkerNode {
 
     /** Run worker */
     virtual void run();
+
+    /** Send message using network */
+    void send(query::DataRequest* request);
+
+    /** Gets a communication message from network interface */
+    query::Communication* getMessage(bool blocking);
+    /** Parses a communication method and stores contained information */
+    void parseMessage(query::Communication *message, bool allow_data);
 };
 
 class SchedulerNode : public WorkerNode {
@@ -122,7 +126,7 @@ class Packet {
   public:
     bool full; /** only Packet should write to this! */
     Packet(vector<Column*> &view, vector<bool> &sent_columns);
-    Packet(char data[], size_t data_len);
+    Packet(const char* data, size_t data_len);
 
     void consume(vector<Column*> view);
     query::DataPacket* serialize();

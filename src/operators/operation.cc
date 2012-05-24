@@ -3,6 +3,8 @@
 
 #include "operation.h"
 
+#include "distributed/node.h"
+
 int Operation::consume() {
   vector<Column*>* ptr = pull();
 
@@ -199,9 +201,14 @@ ShuffleOperation::~ShuffleOperation() {
 UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   assert(oper.column_size() == oper.type_size());
 
-  sources = vector<int>(oper.source_size());
-  for (unsigned i = 0 ; i < sources.size() ; ++i) {
-    sources[i] = oper.source().Get(i).node(); // TODO: we need to save stripe
+  firstPull = true;
+
+  sourcesNode = vector<int>(oper.source_size());
+  sourcesStripe = vector<int>(oper.source_size());
+  for (unsigned i = 0 ; i < sourcesNode.size() ; ++i) {
+    sourcesNode[i] = oper.source().Get(i).node();
+    sourcesStripe[i] = oper.source().Get(i).stripe();
+    nodeToStripe[sourcesNode[i]] = sourcesStripe[i];
   }
 
   columns = vector<int>(oper.column_size());
@@ -222,6 +229,51 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
 }
 
 vector<Column*>* UnionOperation::pull() {
+  if (firstPull) {
+    // Ask everyone
+    for (unsigned i = 0 ; i < sourcesNode.size() ; ++i) {
+      query::DataRequest request;
+      request.set_node(sourcesNode[i]);
+      request.set_stripe(sourcesStripe[i]);
+      request.set_number(1); // TODO: set it more reasonable
+      global::worker->send(&request);
+    }
+    firstPull = false;
+  }
+
+  // preparing new data
+  query::Communication* message;
+  bool hasRow = false;
+  while (!hasRow && (message = global::worker->getMessage(true)) != NULL) {
+    if (message->has_data_response()) {
+      // ask for more
+      query::DataResponse dataResponse = message->data_response();
+      if (dataResponse.number() > 0) {
+        query::DataRequest request;
+        request.set_node(dataResponse.node());
+        request.set_stripe(nodeToStripe[dataResponse.node()]);
+        request.set_number(1); // TODO: set it more reasonable
+        global::worker->send(&request);
+      }
+
+      assert(dataResponse.data().data_size() == dataResponse.data().type_size());
+      int n = dataResponse.data().data_size();
+      for (int i = 0 ; i < n ; ++i) {
+        // TODO parse it
+        Packet packet(dataResponse.data().data().Get(i).c_str(),
+            1 /* TODO: I don't know what should be passed */ );
+        // TODO: save it in cache
+      }
+
+      // TODO: check (potentially set hasRow = true)
+
+    } else {
+      // store future requests
+      global::worker->parseMessage(message, false);
+    }
+  }
+
+  
   // TODO: implement
   vector<Column*>* tmp = new vector<Column*>;
   tmp->push_back(new ColumnChunk<double>());

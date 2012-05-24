@@ -6,6 +6,14 @@
 #include "node.h"
 #include "operators/factory.h"
 
+namespace global {
+  WorkerNode* worker;
+}
+
+WorkerNode::WorkerNode(NodeEnvironmentInterface *nei) : nei(nei) {
+  global::worker = this;
+}
+
 query::Communication* WorkerNode::getMessage(bool blocking) {
   char *data;
   size_t data_len;
@@ -64,17 +72,6 @@ void WorkerNode::getRequest() {
     parseMessage(message, true);
   }
   return ;
-}
-
-void WorkerNode::setSource(vector< pair<int32_t, int32_t> > &source) {
-  
-//  this->source = source;
-}
-
-vector<Column*> WorkerNode::pull(int32_t number) {
-  // TODO: implement
-  assert(false); // not implemented yet
-  return vector<Column*>();
 }
 
 void WorkerNode::resetOutput(int buckets, vector<bool> &columns) {
@@ -165,6 +162,12 @@ void WorkerNode::flushBucket(int bucket) {
     full_packets--;
     delete packet; // dump packet
   }
+}
+
+void WorkerNode::send(query::DataRequest* request) {
+  string msg;
+  request->SerializeToString(&msg);
+  nei->SendPacket(request->node(), msg.c_str(), msg.size());
 }
 
 void WorkerNode::sendEof() {
@@ -654,7 +657,7 @@ query::DataPacket* Packet::serialize() {
   return packet;
 }
 
-Packet::Packet(char data[], size_t data_len) {
+Packet::Packet(const char* data, size_t data_len) {
   // TODO : IMPLEMENT THIS
 }
 

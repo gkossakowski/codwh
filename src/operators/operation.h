@@ -98,9 +98,12 @@ class ShuffleOperation : public Operation {
 };
 
 class UnionOperation : public Operation {
-  vector<int> sources;
+  vector<int> sourcesNode;
+  vector<int> sourcesStripe;
   vector<int> columns;
   vector<query::ColumnType> types;
+  bool firstPull;
+  std::tr1::unordered_map<int, int> nodeToStripe;
  public:
   UnionOperation(const query::UnionOperation& oper);
   vector<Column*>* pull();
