@@ -169,6 +169,14 @@ FilterOperation::~FilterOperation() {
 ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
   source = Factory::createOperation(oper.source());
   receiversCount = oper.receiverscount();
+  assert(oper.column_size() == oper.type_size());
+  for (int i = 0; i < oper.column_size(); i++) {
+    columns.push_back(oper.column(i));
+    columnTypes.push_back(oper.type(i));
+  }
+  for (int i = 0; i < oper.hash_column_size(); i++) {
+    hashColumns.push_back(oper.hash_column(i));
+  }
 }
 
 vector<Column*>* ShuffleOperation::pull() {
