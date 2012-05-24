@@ -25,8 +25,13 @@ query::Communication* WorkerNode::getMessage(bool blocking) {
 }
 
 void WorkerNode::parseMessage(query::Communication *message, bool allow_data) {
-  if (message->has_operation()) {
-    jobs.push(message->release_operation());
+  if (message->stripe_size() > 0) {
+    query::Communication::Stripe *st;
+    for (int i = 0; i < message->stripe_size(); i++) {
+      st = new query::Communication::Stripe();
+      st->GetReflection()->Swap(message->mutable_stripe(i), st);
+      jobs.push(st);
+    }
   } else if (message->has_data_request()) {
     requests.push(message->release_data_request());
   } else if (allow_data && message->has_data_response()){
@@ -61,8 +66,9 @@ void WorkerNode::getRequest() {
   return ;
 }
 
-void WorkerNode::setSource(vector<int32_t> source) {
-  this->source = source;
+void WorkerNode::setSource(vector< pair<int32_t, int32_t> > &source) {
+  
+//  this->source = source;
 }
 
 vector<Column*> WorkerNode::pull(int32_t number) {
@@ -180,8 +186,8 @@ void WorkerNode::sendEof() {
 }
 
 int WorkerNode::execPlan(query::Operation *op) {
-  printf("Worker[%d] job proto tree:\n%s\n",
-         nei->my_node_number(), op->DebugString().c_str());
+  printf("Worker[%d] stripe[%d] job proto tree:\n%s\n",
+         nei->my_node_number(), stripe, op->DebugString().c_str());
   Operation* operation = Factory::createOperation(*op);
   FinalOperation* finalOperation = dynamic_cast<FinalOperation*>(operation);
 
@@ -237,7 +243,10 @@ void WorkerNode::run() {
   int ret = 0;
   while (0 == ret) {
     if (0 == jobs.size()) getJob();
-    execPlan(jobs.front());
+    query::Communication::Stripe *st;
+    st = jobs.front();
+    stripe = st->stripe();
+    execPlan(st->mutable_operation());
     jobs.pop();
   };
   return ;
@@ -548,15 +557,30 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
 }
 
 void SchedulerNode::sendJob(query::Operation &op, uint32_t node, int stripeId) {
-  printf("Send stripe[%d] to worker[%d]\n%s\n", stripeId, node, op.DebugString().c_str());
-  query::Communication com;
-  const google::protobuf::Reflection *r = com.operation().GetReflection();
+  printf("Enqueing stripe[%d] to worker[%d]\n\n", stripeId, node);
+  nodesJobs[node].push_back(std::make_pair(stripeId, op));
+}
+
+void SchedulerNode::flushJobs() {
+  const google::protobuf::Reflection *r;
   string msg;
 
-  r->Swap(com.mutable_operation(), &op); // breaks `op`, but no need to repair
-  com.SerializeToString(&msg);
-  nei->SendPacket(node, msg.c_str(), msg.size());
-  return ;
+  for (uint32_t node = 0; node < nodesJobs.size(); node++) {
+    if (nodesJobs[node].size() == 0)
+      continue;
+
+    query::Communication com;
+    for (uint32_t i = 0; i < nodesJobs[node].size(); i++) {
+      com.add_stripe();
+      com.mutable_stripe(i)->set_stripe(nodesJobs[node][i].first);
+      r = com.stripe(i).operation().GetReflection();
+      r->Swap(&nodesJobs[node][i].second, com.mutable_stripe(i)->mutable_operation());
+    }
+
+    com.SerializeToString(&msg);
+    printf("Sending jobs to worker[%d]\n\n%s", node, com.DebugString().c_str());
+    nei->SendPacket(node, msg.c_str(), msg.size());
+  }
 }
 
 void SchedulerNode::run(const query::Operation &op) {
@@ -570,6 +594,7 @@ void SchedulerNode::run(const query::Operation &op) {
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
   schedule(stripes, nei->nodes_count() - 1, numberOfInputFiles);
+  flushJobs();
   delete stripes;
 
   // TODO : switch to a worker mode

@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <queue>
+#include <map>
+#include <utility>
 
 #include "operators/operation.h"
 #include "operators/column.h"
@@ -11,6 +13,8 @@
 
 using std::queue;
 using std::vector;
+using std::map;
+using std::pair;
 
 /** packet size in bytes */
 
@@ -21,13 +25,18 @@ class WorkerNode {
     WorkerNode(const WorkerNode &node){};
 
   protected:
-    vector<int32_t> source;
     NodeEnvironmentInterface *nei;
-    queue<query::Operation *> jobs;
+    queue<query::Communication::Stripe *> jobs;
     queue<query::DataRequest *> requests;
+    int stripe;
 
-    /** Input buffer (stack) */
+    /** Input buffer */
+    map<int32_t, vector<int32_t> > sources;
+    vector<int32_t> source;
     vector<Column*> input;
+    vector<int> feeder_state;
+    int requested_packets;
+    int input_top;
 
     /** Output buffer */
     int full_packets;
@@ -61,8 +70,8 @@ class WorkerNode {
   public:
     WorkerNode(NodeEnvironmentInterface *nei) : nei(nei) {};
 
-    /** Set data sources */
-    void setSource(vector<int32_t> source);
+    /** Set data sources, reset input buffer */
+    void setSource(vector< pair<int32_t, int32_t> > &source);
     /** Get data from any source */
     vector<Column*> pull(int32_t number);
 
@@ -80,17 +89,22 @@ class WorkerNode {
 class SchedulerNode : public WorkerNode {
   private:
     SchedulerNode(const SchedulerNode &node);
+    vector< vector< pair<int, query::Operation> > > nodesJobs;
 
   protected:
     /** Slice query into stripes */
     vector<query::Operation>* makeStripes(query::Operation query);
     /** Fill in and send stripes for a given number of nodes */
     void schedule(vector<query::Operation> *stripe, uint32_t nodes, int numberOfFiles);
-    /** Send job to a given node, the given job object is destroyed */
+    /** Add job to nodes jobs queue, the given job object is destroyed */
     void sendJob(query::Operation &op, uint32_t node, int stripeId);
+    /** Send all jobs to nodes */
+    void flushJobs();
 
    public:
-    SchedulerNode(NodeEnvironmentInterface *nei) : WorkerNode(nei) {};
+    SchedulerNode(NodeEnvironmentInterface *nei) : WorkerNode(nei) {
+      nodesJobs.resize(nei->nodes_count());
+    };
 
     /** Run scheduler */
     virtual void run(const query::Operation &op);

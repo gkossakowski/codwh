@@ -184,8 +184,12 @@ message DataResponse {
 }
 
 message Communication {
+  message Stripe {
+    required Operation operation = 1;
+    required int32 stripe = 2;
+  }
   // Exactly one of the fields below is set.
-  optional Operation operation = 1;
+  repeated Stripe stripe = 1;
   optional DataRequest data_request = 2;
   optional DataResponse data_response = 3;
 }
