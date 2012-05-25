@@ -39,6 +39,11 @@ inline query::ColumnType getType<char>() {
   return query::BOOL;
 }
 
+template<>
+inline query::ColumnType getType<size_t>() {
+  return query::HASH;
+}
+
 inline int getTypeSize(query::ColumnType type_) {
   switch (type_) {
     case query::INT:
@@ -47,6 +52,8 @@ inline int getTypeSize(query::ColumnType type_) {
       return 8;
     case query::BOOL:
       return 1;
+    case query::HASH:
+      return sizeof(size_t);
     default:
       assert (false);
       return 0;
@@ -71,6 +78,11 @@ inline std::string getTypeName<double>() {
 template<>
 inline std::string getTypeName<char>() {
   return "BOOL";
+}
+
+template<>
+inline std::string getTypeName<size_t>() {
+  return "HASH";
 }
 
 }
