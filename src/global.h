@@ -21,7 +21,7 @@ namespace global {
 
 template<class T>
 inline query::ColumnType getType() {
-  return 0;
+  return query::INVALID_TYPE;
 }
 
 template<>

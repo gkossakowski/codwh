@@ -180,7 +180,7 @@ ShuffleOperation::ShuffleOperation(const query::ShuffleOperation& oper) {
   buckets = vector< vector<Column*> >(receiversCount);
   for (unsigned int i = 0; i < buckets.size(); i++) {
     buckets[i] = std::vector<Column*>(columnTypes.size());
-    for (int j = 0; j < columnTypes.size(); j++) {
+    for (unsigned j = 0; j < columnTypes.size(); j++) {
       buckets[i][j] = Factory::createColumnFromType(columnTypes[j]);
     }
   }
@@ -221,7 +221,7 @@ vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
     int bucketNumber = hashes[i] % receiversCount;
     vector<Column*>* bucket = &buckets[bucketNumber];
     any_t data;
-    for (unsigned int j = 0; i < bucket->size(); j++) {
+    for (unsigned j = 0; j < bucket->size() ; j++) {
       (*sourceColumns)[j]->fill(&data, i);
       Column* col = (*bucket)[j];
       col->take(data, col->size);
