@@ -190,7 +190,7 @@ void WorkerNode::send(query::DataRequest* request) {
   request->GetReflection()->Swap(request, com.mutable_data_request());
   com.SerializeToString(&msg);
   std::cout << "Sending message: \n" << com.DebugString() << std::endl;
-  nei->SendPacket(request->node(), msg.c_str(), msg.size());
+  nei->SendPacket(com.data_request().node(), msg.c_str(), msg.size());
   request->GetReflection()->Swap(request, com.mutable_data_request());
 }
 
