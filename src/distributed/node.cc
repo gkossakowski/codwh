@@ -28,14 +28,8 @@ query::Communication* WorkerNode::getMessage(bool blocking) {
   }
   message = new query::Communication();
   message->ParseFromString(string(data, data_len));
-  std::cout << "Got message:\n" << message->DebugString() << std::endl;
-
-  /*
-  std::cout << "WARNING: JM: " << string(data, data_len) << "\n";
-  std::cout << "WARNING: JM: WorkerNode::getMessage(" << blocking << ") "
-      << message->DebugString() << "\n";
-      */
   delete[] data;
+
   return message;
 }
 
