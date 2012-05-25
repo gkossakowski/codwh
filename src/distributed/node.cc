@@ -56,7 +56,7 @@ void WorkerNode::parseMessage(query::Communication *message, bool allow_data) {
       << allow_data << ")\n";
     std::cout << "Stripe size: " << message->stripe_size() << "\n";
     std::cout << "Data request: " << message->has_data_request() << "\n";
-    std::cout << "Data response: " << message->has_data_response() << "\n";
+    std::cout << "Data response: " << message->has_data_response() << std::endl;
     assert(false);
   }
 
