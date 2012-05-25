@@ -273,7 +273,13 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   // process the first stripe
   {
     query::Operation& firstStripe = stripes->front();
-    assignReceiversCount(firstStripe, nodeIdsNext.size());
+    // TODO: special hack for case of only two stripes, I need to refactor this
+    // code to handle it in more elegant way
+    if (stripes->size() == 2) {
+      assignReceiversCount(firstStripe, 1);
+    } else {
+      assignReceiversCount(firstStripe, nodeIdsNext.size());
+    }
     for (int i = 0; i < numberOfFiles; i++) {
       query::Operation stripeForFile = firstStripe; // make copy
       assignFileToScan(stripeForFile, i);
