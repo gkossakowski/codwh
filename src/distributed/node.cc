@@ -195,15 +195,20 @@ void WorkerNode::flushBucket(int bucket) {
   }
 }
 
-void WorkerNode::send(query::DataRequest* request) {
+void WorkerNode::sendRequest(int provider_stripe, int number, int node) {
   string msg;
   query::Communication com;
   com.data_request();
-  request->GetReflection()->Swap(request, com.mutable_data_request());
+
+  query::DataRequest *request = com.mutable_data_request();
+  request->set_node(nei->my_node_number());
+  request->set_provider_stripe(provider_stripe);
+  request->set_consumer_stripe(stripe);
+  request->set_number(number);
+
   com.SerializeToString(&msg);
-  std::cout << "Sending message: \n" << com.DebugString() << std::endl;
-  nei->SendPacket(com.data_request().node(), msg.c_str(), msg.size());
-  request->GetReflection()->Swap(request, com.mutable_data_request());
+  std::cout << "Sending data request: \n" << com.DebugString() << std::endl;
+  nei->SendPacket(node, msg.c_str(), msg.size());
 }
 
 void WorkerNode::sendEof() {

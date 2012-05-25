@@ -83,8 +83,8 @@ class WorkerNode {
     /** Run worker */
     virtual void run();
 
-    /** Send message using network */
-    void send(query::DataRequest* request);
+    /** Send data request using network */
+    void sendRequest(int provider_stripe, int number, int node);
     /** Wait until any data response occurs */
     void getResponse();
 
