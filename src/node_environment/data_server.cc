@@ -10,9 +10,13 @@
 #include <map>
 #include <vector>
 #include <utility>
+#include <string>
+#include <iostream>
 
 using ::std::min;
 using ::std::vector;
+using ::std::string;
+using ::std::cout;
 
 #define dprintf(...)
 
@@ -43,22 +47,29 @@ double normal() {
 class ColumnServer {
  public:
   ColumnServer(int query_size) : rows_left_(query_size) {}
+  virtual string getName() {
+    return "ColumnServer";
+  }
   virtual ~ColumnServer() {};
 
   virtual int GetDoubles(int number, double* destination) {
+    cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
 
   virtual int GetInts(int number, int32* destination) {
+    cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
   virtual int GetByteBools(int number, bool* destination) {
+    cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
   virtual int GetBitBools(int number, char* destination) {
+    cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
@@ -111,6 +122,10 @@ class DoubleColumnServer : public ColumnServer {
         normal_(random(0, 1)) {
   }
 
+  string getName() {
+    return "DoubleColumnServer";
+  }
+
   int GetDoubles(int number, double *destination) {
     dprintf("SERVING %d to %d, zoom %d, normalcy %s\n",
            low_range_, high_range_, zoom_range_, normal_ ? "TRUE" : "FALSE");
@@ -148,6 +163,10 @@ class IntColumnServer : public ColumnServer {
         normal_(random(0, 1)) {
   }
 
+  string getName() {
+    return "IntColumnServer";
+  }
+
   int GetInts(int number, int *destination) {
     dprintf("SERVING %d to %d, normalcy %s\n",
            low_range_, high_range_, normal_ ? "TRUE" : "FALSE");
@@ -178,6 +197,10 @@ class BoolColumnServer : public ColumnServer {
   BoolColumnServer(int query_size)
       : ColumnServer(query_size),
         probability_(random(0, 100)) {
+  }
+
+  string getName() {
+    return "BoolColumnServer";
   }
 
   int GetByteBools(int number, bool *destination) {

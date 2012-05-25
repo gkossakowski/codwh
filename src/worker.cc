@@ -24,10 +24,6 @@ int main(int argc, char** argv) {
   boost::scoped_ptr<NodeEnvironmentInterface> nei(
       CreateNodeEnvironment(argc, argv));
 
-  // Ugly, temporary hack
-  printf("WARNING: New server, query id = %d\n", atoi(argv[argc - 1]));
-  Factory::server = CreateServer(atoi(argv[argc - 1]));
-
   /** Run job */
   WorkerNode worker(nei.get());
   worker.run();
