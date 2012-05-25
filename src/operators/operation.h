@@ -32,7 +32,7 @@ class Operation : public Node {
     assert(false);
   }
   /** consume output at server */
-  int consume();
+  virtual int consume();
 };
 
 class ScanOperation : public Operation {
@@ -134,11 +134,13 @@ class UnionOperation : public Operation {
 
 class FinalOperation : public Operation {
   Operation* source;
+  Server* sinkProxy;
  public:
   FinalOperation(const query::FinalOperation& oper);
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
   vector<query::ColumnType> getTypes();
+  int consume();
   ~FinalOperation();
 };
 

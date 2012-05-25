@@ -95,6 +95,8 @@ class WorkerNode {
 
     /** Open new DataSourceInterface, caller is responsible for deallocation */
     DataSourceInterface* openSourceInterface(int fileId);
+    /** Open sink, should be called exactly one per query */
+    DataSinkInterface* openSinkInterface();
 };
 
 class SchedulerNode : public WorkerNode {

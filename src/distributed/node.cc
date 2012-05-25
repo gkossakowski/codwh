@@ -278,6 +278,10 @@ WorkerNode::openSourceInterface(int fileId) {
   return nei->OpenDataSourceFile(fileId);
 }
 
+DataSinkInterface*
+WorkerNode::openSinkInterface() {
+  return nei->OpenDataSink();
+}
 
 
 Packet::Packet(vector<Column*> &view)

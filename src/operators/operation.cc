@@ -4,6 +4,7 @@
 #include "operation.h"
 
 #include "distributed/node.h"
+#include "node_environment/sink_server_proxy.h"
 
 int Operation::consume() {
   vector<Column*>* ptr = pull();
@@ -425,6 +426,7 @@ vector<query::ColumnType> UnionOperation::getTypes() {
 // FinalOperation {{{
 FinalOperation::FinalOperation(const query::FinalOperation& oper) {
   source = Factory::createOperation(oper.source());
+  sinkProxy = new SinkToServerProxy(global::worker->openSinkInterface());
 }
 
 vector<Column*>* FinalOperation::pull() {
@@ -440,7 +442,22 @@ vector<query::ColumnType> FinalOperation::getTypes() {
   return source->getTypes();
 }
 
+int FinalOperation::consume() {
+  vector<Column*>* ptr = pull();
+
+  if (ptr->empty()) {
+    return 0;
+  }
+
+  for (unsigned i = 0 ; i < ptr->size() ; ++i) {
+    (*ptr)[i]->consume(i, sinkProxy);
+  }
+
+  return (*ptr)[0]->size;
+}
+
 FinalOperation::~FinalOperation() {
+  delete sinkProxy;
   delete source;
 }
 // }}}
