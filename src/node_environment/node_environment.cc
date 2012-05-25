@@ -74,12 +74,14 @@ class DataSink : public DataSinkInterface {
 class NodeEnvironment : public NodeEnvironmentInterface {
  public:
   NodeEnvironment(uint32 node_number,
+                  int query_num,
                   NetworkInput* input,
                   std::vector<NetworkOutput*> outputs)
   : node_number_(node_number),
     node_count_(outputs.size()),
     input_(input),
-    outputs_(outputs) {}
+    outputs_(outputs),
+    kQueryId(query_num) {}
 
   virtual uint32 my_node_number() const {
     CHECK(node_number_>=0, "");
@@ -127,7 +129,7 @@ class NodeEnvironment : public NodeEnvironmentInterface {
   }
 
  private:
-  const static int kQueryId = 1;
+  int kQueryId;
   uint32 node_number_;
   uint32 node_count_;
   boost::scoped_ptr<NetworkInput> input_;
@@ -137,15 +139,16 @@ class NodeEnvironment : public NodeEnvironmentInterface {
 } // namespace
 
 NodeEnvironmentInterface* CreateNodeEnvironment(int argc, char** argv) {
-  CHECK(argc >= 4, "Requires at least 3 arguments [node number] [port] [target_node:port]*");
+  CHECK(argc >= 5, "Requires at least 4 arguments [node number] [port] [query num] [target_node:port]*");
   int node_number = atoi(argv[1]);
   int listening_port = atoi(argv[2]);
+  int query_num = atoi(argv[3]);
   std::vector<NetworkOutput*> outputs;
-  for (int i = 3; i < argc; ++i) {
+  for (int i = 4; i < argc; ++i) {
     IpAddress address = IpAddress::Parse(argv[i]);
     outputs.push_back(new NetworkOutput(address.getHostAddress(),
                                         address.getService()));
   }
   LOG1("Running server listening on port: %d", listening_port);
-  return new NodeEnvironment(node_number, new NetworkInput(listening_port), outputs);
+  return new NodeEnvironment(node_number, query_num, new NetworkInput(listening_port), outputs);
 }
