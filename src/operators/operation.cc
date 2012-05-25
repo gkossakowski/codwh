@@ -372,9 +372,10 @@ vector<Column*>* UnionOperation::pull() {
       finished++; // got EOF
     }
 
-    if (finished == sourcesNode.size())
+    if (finished == sourcesNode.size()){
       printf("Union consumed all data\n");
       return &eof;
+    }
   }
   
   printf("collected the whole chunk in UnionOperation:pull, returning\n");
