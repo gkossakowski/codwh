@@ -181,8 +181,9 @@ message DataPacket {
 message DataResponse {
   // Author of a request.
   required int32 node = 1;
+  // number of the packet from given bucket, used for debugging
   required int32 number = 2;
-  required DataPacket data = 3;
+  optional DataPacket data = 3;
 }
 
 message Communication {

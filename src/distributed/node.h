@@ -45,6 +45,7 @@ class WorkerNode {
 
     /** Output buffer */
     int full_packets;
+    /** Output packets per bucket */
     vector< queue<NodePacket*> > output;
     vector<int> pending_requests;
     vector<int> output_counters;
@@ -67,6 +68,8 @@ class WorkerNode {
     void flushBucket(int bucket);
     /** Sends EOF messages to consumers */
     void sendEof();
+  
+    void debugPrint(const std::string msg);
 
   public:
     WorkerNode(NodeEnvironmentInterface *nei);
@@ -108,7 +111,7 @@ class NodePacket {
     size_t capacity; /** maximum capacity in rows */
 
   public:
-    bool full; /** only Packet should write to this! */
+    bool readyToSend; /** only Packet should write to this! */
     NodePacket(vector<Column*> &view);
     NodePacket(const char* data, size_t data_len);
 

@@ -57,6 +57,10 @@ void WorkerNode::parseMessage(query::Communication *message, bool allow_data) {
   delete message;
 }
 
+void WorkerNode::debugPrint(const std::string msg) {
+  printf("Worker[%d]: %s\n", nei->my_node_number(), msg.c_str());
+}
+
 void WorkerNode::getJob() {
   /** Wait until a job occures, than store it in a jobs queue. */
   std::cout << "Awaiting for a job" << std::endl;
@@ -83,7 +87,7 @@ void WorkerNode::getRequest() {
 }
 
 void WorkerNode::getResponse() {
-  std::cout << "Awaiting for data request" << std::endl;
+  std::cout << "Awaiting for data response" << std::endl;
   query::Communication *message;
 
   while (responses.size() == 0) {
@@ -109,22 +113,26 @@ void WorkerNode::resetOutput(int buckets) {
 }
 
 void WorkerNode::parseRequests() {
+  debugPrint("parseRequests...");
   int bucket;
   query::DataRequest *request;
 
+  printf("requests.size = %lu\n", requests.size());
   while (requests.size() > 0) {
     request = requests.back();
     requests.pop();
     if (request->provider_stripe() != stripe) {
       // future stripe, save for later
       assert(request->provider_stripe() > stripe);
+      debugPrint("delayed_requests.push(...)");
       delayed_requests.push(request);
       continue;
     }
 
     bucket = request->consumer_stripe() % output.size();
+    printf("request from stripe %d, pending for bucket %d\n", request->consumer_stripe(), bucket);
     consumers_map[bucket] = request->node();
-    pending_requests[bucket] += request->number();
+    pending_requests[bucket]++;
 
     flushBucket(bucket); // try to send data
     delete request;
@@ -134,11 +142,11 @@ void WorkerNode::parseRequests() {
 void WorkerNode::packData(vector<Column*> &data, int bucket) {
   queue<NodePacket*> &buck = output[bucket];
 
-  if (buck.size() == 0 || buck.back()->full)
+  if (buck.size() == 0 || buck.back()->readyToSend)
     buck.push(new NodePacket(data));
   buck.back()->consume(data);
 
-  if (buck.back()->full)
+  if (buck.back()->readyToSend)
     full_packets++;
   assert(full_packets <= MAX_OUTPUT_PACKETS);
 
@@ -161,8 +169,17 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
 }
 
 void WorkerNode::flushBucket(int bucket) {
-  if (pending_requests[bucket] == 0 || output[bucket].front()->full)
+  debugPrint("flushBucket...");
+  printf("bucket = %d\n", bucket);
+  if (pending_requests[bucket] == 0) {
+    debugPrint("flushBucket: no pending request for bucket");
     return;
+  }
+  assert(!output[bucket].empty());
+  if (!output[bucket].front()->readyToSend) {
+    debugPrint("flushBucket: packet not ready to send for bucket");
+    return;
+  }
   assert(consumers_map[bucket] != -1); // we should know node number from request
 
   query::Communication com;
@@ -173,13 +190,14 @@ void WorkerNode::flushBucket(int bucket) {
 
   response->set_node(nei->my_node_number());
   // send data while we have a full packet and a pending request
-  while (pending_requests[bucket] > 0 && !output[bucket].front()->full) {
+  while (pending_requests[bucket] > 0 && output[bucket].front()->readyToSend) {
     packet = output[bucket].front()->serialize();
     output_counters[bucket]++; // increase packet number counter
 
     response->set_number(output_counters[bucket]); // set number
     r->Swap(response->mutable_data(), packet); // set data
     com.SerializeToString(&msg);
+    debugPrint("sending data response");
     nei->SendPacket(consumers_map[bucket], msg.c_str(), msg.size()); // send
 
     output[bucket].pop(); // remove packet from queue
@@ -210,7 +228,7 @@ void WorkerNode::sendEof() {
   query::DataResponse *response = com.mutable_data_response();
   string msg;
 
-  std::cout << " Worker " << nei->my_node_number() << " sendEof()\n";
+  std::cout << " Worker " << nei->my_node_number() << ": sendEof()\n";
 
   response->set_node(nei->my_node_number());
   response->set_number(-1); // EOF response
@@ -265,8 +283,8 @@ int WorkerNode::execPlan(query::Operation *op) {
     // we have all data; try to send it
     assert(buckets_num > 0);
     for (int i = 0; i < buckets_num; i++) {
-      if (!output[i].back()->full) { // close packets
-        output[i].back()->full = true;
+      if (!output[i].back()->readyToSend) { // close packets
+        output[i].back()->readyToSend = true;
         full_packets++;
       }
       flushBucket(i);
@@ -310,7 +328,7 @@ WorkerNode::openSinkInterface() {
 
 
 NodePacket::NodePacket(vector<Column*> &view)
-  : size(0), full(false)
+  : size(0), readyToSend(false)
 {
   size_t row_size = 0;
   columns.resize(view.size(), NULL);
@@ -333,14 +351,14 @@ NodePacket::NodePacket(vector<Column*> &view)
 
 /** Tries to consume a view. If it's too much data - returns false. */
 void NodePacket::consume(vector<Column*> view){
-  if (full) assert(false); // should check if it's full before calling!
+  if (readyToSend) assert(false); // should check if it's full before calling!
 
   for (uint32_t i = 0; i < view.size(); i++)
     offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
   size += static_cast<size_t>(view[0]->size);
 
   if (capacity - size < static_cast<size_t>(DEFAULT_CHUNK_SIZE))
-    full = true;
+    readyToSend = true;
 }
 
 query::DataPacket* NodePacket::serialize() {
