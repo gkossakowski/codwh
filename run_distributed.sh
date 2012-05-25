@@ -16,6 +16,7 @@ DOMAIN=".mimuw.edu.pl"
 SCHED_HOST="students"
 WORK_HOSTS="students students"
 INIT_PORT=16000
+QUERY_NUM=$1
 
 SCHED_CMD="./codwh/src/scheduler"
 SCHED_PARAMS="$1 $2 0"
@@ -33,7 +34,7 @@ i=1
 WORKER_PORT=$((INIT_PORT + 1))
 for worker in $WORK_HOSTS; do
     echo Running worker $WORKER_PORT
-    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $HOSTS $1 2>&1 > worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
+    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $HOSTS 2>&1 > worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
     $SSH $USER@$worker$DOMAIN bash -c "\"$MONITOR_CMD worker_$((WORKER_PORT))_pid 2>&1 > monitor_$(($WORKER_PORT))_log & echo \\\$! > monitor_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
@@ -44,7 +45,7 @@ done
 sleep 1
 
 echo Running scheduler
-$SSH $USER@$SCHED_HOST$DOMAIN bash -c \""$SCHED_CMD $SCHED_PARAMS $INIT_PORT $HOSTS 2>&1 > sched_log"\"
+$SSH $USER@$SCHED_HOST$DOMAIN bash -c \""$SCHED_CMD $SCHED_PARAMS 0 $INIT_PORT $QUERY_NUM $HOSTS 2>&1 > sched_log"\"
 #SSH_PIDS="$SSH_PIDS $!"
 #$SSH $USER@$worker$DOMAIN bash -c "\"$MONITOR_CMD \`cat sched_pid\` 2>&1 > monitor_15000_log & echo \\\$! > monitor_15000_pid\"" &
 #SSH_PIDS="$SSH_PIDS $!"

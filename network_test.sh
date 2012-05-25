@@ -12,6 +12,7 @@ fi
 
 START_PORT=2000
 COUNT=$1
+QUERY_NUM=$2
 
 MAX_NUMBER=`expr $COUNT - 1`
 
@@ -26,14 +27,14 @@ PIDS=""
 
 for i in `seq 1 $MAX_NUMBER`; do
    PORT=`expr $START_PORT + $i`
-  echo "RUNNING:./src/worker $i $2 $PORT $HOSTS &"
-  ./src/worker $i $PORT $2 $HOSTS &> "logs/`printf \"%03d\" $i`" & # we will remove query um later
+  echo "RUNNING:./src/worker $i $QUERY_NUM $PORT $HOSTS &"
+  ./src/worker $i $PORT $QUERY_NUM $HOSTS &> "logs/`printf \"%03d\" $i`" & # we will remove query um later
   PIDS="$PIDS $!"
 done
 
-echo "RUNNING:./src/scheduler $2 $3 0 $START_PORT $HOSTS &"
+echo "RUNNING:./src/scheduler $QUERY_NUM $3 0 $START_PORT $QUERY_NUM $HOSTS &"
 sleep 2
-./src/scheduler $2 $3 0 $START_PORT $HOSTS &> "logs/000" &
+./src/scheduler $QUERY_NUM $3 0 $START_PORT $QUERY_NUM $HOSTS &> "logs/000" &
 PIDS="$PIDS $!"
 
 echo $PIDS
