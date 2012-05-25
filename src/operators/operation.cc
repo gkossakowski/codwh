@@ -365,7 +365,7 @@ vector<Column*>* UnionOperation::pull() {
       global::worker->sendRequest(nodeToStripe[dataResponse->node()], 1, // TODO: nie wiem czy to dobre odwzorowanie
 		      	          dataResponse->node()); // TODO: set it more reasonable
       assert(dataResponse->data().data_size() == dataResponse->data().type_size());
-      consume(dataResponse);
+      processReceivedData(dataResponse);
     } else {
       finished++; // got EOF
     }
@@ -381,8 +381,8 @@ vector<Column*>* UnionOperation::pull() {
   // TODO: chunk deallocation
 }
 
-void UnionOperation::consume(query::DataResponse *response) {
-  printf("UnionOperation::consume...\n");
+void UnionOperation::processReceivedData(query::DataResponse *response) {
+  printf("UnionOperation::processReceivedData...\n");
   int from_row = 0;
   assert(response->data().data(0).size() % global::getTypeSize(response->data().type(0)) == 0);
   int size = response->data().data(0).size() /

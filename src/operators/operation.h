@@ -124,7 +124,7 @@ class UnionOperation : public Operation {
   std::queue<vector<Column*>*> cache;
   bool firstPull;
   std::tr1::unordered_map<int, int> nodeToStripe;
-  void consume(query::DataResponse *response);
+  void processReceivedData(query::DataResponse *response);
   vector<Column*> eof;
  public:
   UnionOperation(const query::UnionOperation& oper);
