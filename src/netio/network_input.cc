@@ -132,21 +132,14 @@ NetworkInput::~NetworkInput() {
 }
 
 char* NetworkInput::ReadPacketBlocking(std::size_t* data_len) {
-    char * res;
-    {
-      boost::scoped_ptr<Packet> packet;
-      {
-        Packet* packet_ptr;
-        pc_queue_->Consume(packet_ptr);
-        packet.reset(packet_ptr);
-      }
-      *data_len = packet->size();
-      res =  packet->release_data();
-      printf("After release data");
-      assert(packet->data_ == NULL);
-    }
-      printf("After scoped_ptr destruction");
-  return res;
+  boost::scoped_ptr<Packet> packet;
+  {
+    Packet* packet_ptr;
+    pc_queue_->Consume(packet_ptr);
+    packet.reset(packet_ptr);
+  }
+  *data_len = packet->size();
+  return packet->release_data();
 }
 
 char* NetworkInput::ReadPacketNotBlocking(std::size_t* data_len) {
