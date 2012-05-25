@@ -364,13 +364,11 @@ vector<Column*>* UnionOperation::pull() {
       query::DataRequest request;
       global::worker->sendRequest(nodeToStripe[dataResponse->node()], 1, // TODO: nie wiem czy to dobre odwzorowanie
 		      	          dataResponse->node()); // TODO: set it more reasonable
-
+      assert(dataResponse->data().data_size() == dataResponse->data().type_size());
+      consume(dataResponse);
     } else {
       finished++; // got EOF
     }
-
-    assert(dataResponse->data().data_size() == dataResponse->data().type_size());
-    consume(dataResponse);
 
     if (finished == sourcesNode.size())
       return &eof;
