@@ -66,8 +66,8 @@ ScanOperation::~ScanOperation() {
 
 // }}}
 
-// ScanOperationOwn {{{ 
-ScanOperationOwn::ScanOperationOwn(const query::ScanOperationOwn& oper) {
+// ScanFileOperation {{{ 
+ScanFileOperation::ScanFileOperation(const query::ScanFileOperation& oper) {
   int n = oper.column_size();
   cache = vector<Column*>(n);
   source = global::worker->openSourceInterface(oper.source());
@@ -80,7 +80,7 @@ ScanOperationOwn::ScanOperationOwn(const query::ScanOperationOwn& oper) {
 }
 
 vector<Column*>*
-ScanOperationOwn::pull() {
+ScanFileOperation::pull() {
   for (unsigned i = 0 ; i < providers.size() ; ++i) {
     cache[i] = providers[i]->pull();
   }
@@ -88,7 +88,7 @@ ScanOperationOwn::pull() {
 }
 
 vector<query::ColumnType>
-ScanOperationOwn::getTypes() {
+ScanFileOperation::getTypes() {
   vector<query::ColumnType> result(providers.size());
   for (unsigned i = 0 ; i < providers.size() ; ++i) {
     result[i] = providers[i]->getType();
@@ -97,15 +97,15 @@ ScanOperationOwn::getTypes() {
 }
 
 std::ostream&
-ScanOperationOwn::debugPrint(std::ostream& output) {
-  output << "ScanOperationOwn {";
+ScanFileOperation::debugPrint(std::ostream& output) {
+  output << "ScanFileOperation {";
   for (unsigned i = 0 ; i < providers.size() ; ++i) {
     output << *providers[i] << ",\n";
   }
   return output << "}\n";
 }
 
-ScanOperationOwn::~ScanOperationOwn() {
+ScanFileOperation::~ScanFileOperation() {
   for (unsigned i = 0 ; i < providers.size() ; ++i) {
     delete providers[i];
   }

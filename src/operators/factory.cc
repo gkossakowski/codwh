@@ -16,8 +16,8 @@ Operation*
 Factory::createOperation(const query::Operation& operation) {
   if (operation.has_scan()) {
     return new ScanOperation(operation.scan());
-  } else if (operation.has_scan_own()) {
-    return new ScanOperationOwn(operation.scan_own());
+  } else if (operation.has_scan_file()) {
+    return new ScanFileOperation(operation.scan_file());
   } else if (operation.has_compute()) {
     return new ComputeOperation(operation.compute());
   } else if (operation.has_filter()) {

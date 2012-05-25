@@ -107,7 +107,7 @@ enum ColumnType {
   HASH = 4; // There should be exactly one column with that type.
 };
 
-message ScanOperationOwn {
+message ScanFileOperation {
   repeated int32 column = 1;
   repeated ColumnType type = 2;
   // file-IDs
@@ -156,7 +156,7 @@ message Operation {
   optional FilterOperation filter = 3;
   optional GroupByOperation group_by = 4;
 
-  optional ScanOperationOwn scan_own = 5;
+  optional ScanFileOperation scan_file = 5;
   optional UnionOperation union = 6;
   optional ShuffleOperation shuffle = 7;
   optional FinalOperation final = 8;

@@ -26,7 +26,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
   query::Operation op = query;
   if (query.has_scan()) {
     query::Operation scanOwnOp;
-    query::ScanOperationOwn& scanOwn = *scanOwnOp.mutable_scan_own();
+    query::ScanFileOperation& scanOwn = *scanOwnOp.mutable_scan_file();
     for (int i = 0; i < query.scan().column_size(); i++) {
       scanOwn.add_column(query.scan().column(i));
       switch (query.scan().type(i)) {
@@ -99,7 +99,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     query::Operation groupByOp;
     groupByOp.mutable_group_by()->MergeFrom(groupBy);
     stripes.push_back(groupByOp);
-  } else if (query.has_scan_own() || query.has_union_() || query.has_shuffle() || query.has_final()) {
+  } else if (query.has_scan_file() || query.has_union_() || query.has_shuffle() || query.has_final()) {
     // this should never happen as those nodes are introduced by stripeOperation
     assert(false);
   }
@@ -165,7 +165,7 @@ void assignNodesToUnion(query::Operation& stripe, const vector< std::pair<int, i
     assignNodesToUnion(*stripe.mutable_filter()->mutable_source(), stripeIds);
   } else if (stripe.has_group_by()) {
     assignNodesToUnion(*stripe.mutable_group_by()->mutable_source(), stripeIds);
-  } else if (stripe.has_scan_own()) {
+  } else if (stripe.has_scan_file()) {
     // only the first stripe can have scan own operation and this method
     // should not be called for the first stripe
     assert(false);
@@ -197,8 +197,8 @@ int extractInputFilesNumber(const query::Operation& query) {
     return extractInputFilesNumber(query.filter().source());
   } else if (query.has_group_by()) {
     return extractInputFilesNumber(query.group_by().source());
-  } else if (query.has_scan_own()) {
-    // if we have scan_own it means that the original scan operation has been
+  } else if (query.has_scan_file()) {
+    // if we have scan_file it means that the original scan operation has been
     // erased and there's no way to extract number of input files
     assert(false);
   } else if (query.has_shuffle()) {
@@ -216,7 +216,7 @@ int extractInputFilesNumber(const query::Operation& query) {
 }
 
 /*
- * Assigns file to ScanOperationOwn. This method should be called with
+ * Assigns file to ScanFileOperation. This method should be called with
  * the first stripe only.
  *
  * This method mutates passed stripe.
@@ -231,8 +231,8 @@ void assignFileToScan(query::Operation& stripe, int fileToScan) {
     assignFileToScan(*stripe.mutable_filter()->mutable_source(), fileToScan);
   } else if (stripe.has_group_by()) {
     assignFileToScan(*stripe.mutable_group_by()->mutable_source(), fileToScan);
-  } else if (stripe.has_scan_own()) {
-    stripe.mutable_scan_own()->set_source(fileToScan);
+  } else if (stripe.has_scan_file()) {
+    stripe.mutable_scan_file()->set_source(fileToScan);
   } else if (stripe.has_shuffle()) {
     assignFileToScan(*stripe.mutable_shuffle()->mutable_source(), fileToScan);
   } else if (stripe.has_union_()) {

@@ -45,15 +45,15 @@ class ScanOperation : public Operation {
   ~ScanOperation();
 };
 
-class ScanOperationOwn : public Operation {
+class ScanFileOperation : public Operation {
   vector<ColumnProvider*> providers;
   DataSourceInterface* source;
  public:
-  ScanOperationOwn(const query::ScanOperationOwn& oper);
+  ScanFileOperation(const query::ScanFileOperation& oper);
   vector<Column*>* pull();
   vector<query::ColumnType> getTypes();
   std::ostream& debugPrint(std::ostream& output);
-  ~ScanOperationOwn();
+  ~ScanFileOperation();
 };
 
 class ComputeOperation : public Operation {
