@@ -14,7 +14,7 @@ using google::protobuf::io::FileInputStream;
 #include "operators/factory.h"
 #include "operators/operation.h"
 #include "node_environment/node_environment.h"
-#include "distributed/node.h"
+#include "distributed/scheduler.h"
 
 #include "proto/operations.pb.h"
 

@@ -1,10 +1,10 @@
-#include <vector>
 #include <queue>
 
 #include "proto/operations.pb.h"
 #include "node_environment/node_environment.h"
-#include "node.h"
 #include "operators/factory.h"
+
+#include "scheduler.h"
 
 /*
  * Cuts query into stripes.

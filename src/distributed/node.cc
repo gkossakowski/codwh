@@ -30,6 +30,11 @@ query::Communication* WorkerNode::getMessage(bool blocking) {
   message->ParseFromString(string(data, data_len));
   std::cout << "Got message:\n" << message->DebugString() << std::endl;
 
+  /*
+  std::cout << "WARNING: JM: " << string(data, data_len) << "\n";
+  std::cout << "WARNING: JM: WorkerNode::getMessage(" << blocking << ") "
+      << message->DebugString() << "\n";
+      */
   delete[] data;
   return message;
 }
@@ -46,7 +51,14 @@ void WorkerNode::parseMessage(query::Communication *message, bool allow_data) {
     requests.push(message->release_data_request());
   } else if (allow_data && message->has_data_response()) {
     responses.push(message->release_data_response());
-  } else assert(false);
+  } else {
+    std::cout << "ERROR: WorkerNode::parseMessage(" << message->DebugString() << ", "
+      << allow_data << ")\n";
+    std::cout << "Stripe size: " << message->stripe_size() << "\n";
+    std::cout << "Data request: " << message->has_data_request() << "\n";
+    std::cout << "Data response: " << message->has_data_response() << "\n";
+    assert(false);
+  }
 
   delete message;
 }

@@ -64,7 +64,7 @@ build/distributed_node.o: distributed/node.cc distributed/node.h  build/proto.o
 	mkdir -p build/
 	${CC} -c -o $@ $<
 
-build/distributed_scheduler.o: distributed/scheduler.cc distributed/node.h  build/proto.o
+build/distributed_scheduler.o: distributed/scheduler.cc distributed/node.h distributed/scheduler.h build/proto.o
 	mkdir -p build/
 	${CC} -c -o $@ $<
 
