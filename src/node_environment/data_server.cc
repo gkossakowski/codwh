@@ -18,7 +18,8 @@ using ::std::vector;
 using ::std::string;
 using ::std::cout;
 
-#define dprintf(...)
+//#define dprintf(...)
+#define dprintf printf
 
 namespace {
 
@@ -231,10 +232,10 @@ class BoolColumnServer : public ColumnServer {
 
 // RealDataServer implementation.
 RealDataServer::RealDataServer(const vector<int> &column_types) {
-  int query_size = random(1000000, 10000000);
+  int query_size = 10; //random(1000000, 10000000);
+  // TODO: increase size of query
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {
-    dprintf("WARNING: JM: columnServer: type = %d\n", *it);
     switch(*it) {
       case 1: column_servers_.push_back(new IntColumnServer(query_size));
               break;

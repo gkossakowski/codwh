@@ -210,6 +210,8 @@ void WorkerNode::sendEof() {
   query::DataResponse *response = com.mutable_data_response();
   string msg;
 
+  std::cout << " Worker " << nei->my_node_number() << " sendEof()\n";
+
   response->set_node(nei->my_node_number());
   response->set_number(-1); // EOF response
   com.SerializeToString(&msg); // universal message for all consumers
@@ -231,7 +233,10 @@ int WorkerNode::execPlan(query::Operation *op) {
   FinalOperation* finalOperation = dynamic_cast<FinalOperation*>(operation);
 
   if (NULL != finalOperation) {
-    while (finalOperation->consume() > 0) {
+    int consumeCount = 0;
+    while ((consumeCount = finalOperation->consume()) > 0) {
+      printf(" Worker %d: consuming %d\n",
+          nei->my_node_number(), consumeCount); 
     }
   } else {
     vector< vector<Column*> > *buckets;
@@ -249,6 +254,8 @@ int WorkerNode::execPlan(query::Operation *op) {
       }
 
 
+      printf(" Worker %d: pulling %d\n",
+          nei->my_node_number(), (*buckets)[0][0]->size); 
       for (int i = 0; i < buckets_num; i++) {
         size += (*buckets)[i][0]->size;
         packData((*buckets)[i], i);
