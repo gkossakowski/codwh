@@ -240,6 +240,7 @@ vector<Column*>* ShuffleOperation::pull() {
 void hashSourceColumns(const vector<Column*>* sourceColumns, vector<int> which,
                  Column* columnsHash) {
   assert(columnsHash->getType() == query::HASH);
+  assert(which.size() > 0);
   int size = (*sourceColumns)[which[0]]->size;
   columnsHash->size = size;
   // zero the hash column
@@ -261,17 +262,31 @@ vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
       buckets[i][j]->size = 0;
     }
   }
-  hashSourceColumns(sourceColumns, hashColumns, columnsHash);
-  size_t* hashes = static_cast<ColumnChunk<size_t>*>(columnsHash)->chunk;
-  for (int i = 0; i < columnsHash->size; i++) {
-    int bucketNumber = hashes[i] % receiversCount;
-    vector<Column*>* bucket = &buckets[bucketNumber];
-    any_t data;
-    for (unsigned j = 0; j < bucket->size() ; j++) {
-      (*sourceColumns)[j]->fill(&data, i);
-      Column* col = (*bucket)[j];
-      col->take(data, col->size);
-      col->size++;
+  if (hashColumns.size() > 0) {
+    hashSourceColumns(sourceColumns, hashColumns, columnsHash);
+    size_t* hashes = static_cast<ColumnChunk<size_t>*>(columnsHash)->chunk;
+    for (int i = 0; i < columnsHash->size; i++) {
+      int bucketNumber = hashes[i] % receiversCount;
+      vector<Column*>* bucket = &buckets[bucketNumber];
+      any_t data;
+      for (unsigned j = 0; j < bucket->size() ; j++) {
+        (*sourceColumns)[j]->fill(&data, i);
+        Column* col = (*bucket)[j];
+        col->take(data, col->size);
+        col->size++;
+      }
+    }
+  } else {
+    assert(receiversCount == 1);
+    for (int i = 0; i < columns.size(); i++) {
+      Column* sourceCol = (*sourceColumns)[columns[i]];
+      Column* destCol = buckets[0][i];
+      any_t data;
+      for (int j = 0; j < sourceCol->size; j++) {
+        sourceCol->fill(&data, j);
+        destCol->take(data, destCol->size);
+        destCol->size++;
+      }
     }
   }
   return &buckets;
