@@ -341,7 +341,8 @@ vector<Column*>* UnionOperation::pull() {
 
   // preparing new data
   query::DataResponse* dataResponse;
-  while (!cache.size() == 0) {
+  while (cache.size() == 0) {
+    global::worker->getResponse();
     dataResponse = global::worker->responses.front();
     global::worker->responses.pop();
 
@@ -373,12 +374,13 @@ vector<Column*>* UnionOperation::pull() {
 
 void UnionOperation::consume(query::DataResponse *response) {
   int from_row = 0;
-  int size = response->data().data(0).size();
+  assert(response->data().data(0).size() % global::getTypeSize(response->data().type(0)) == 0);
+  int size = response->data().data(0).size() /
              global::getTypeSize(response->data().type(0));
   int chunk_size;
 
 
-  query::DataPacket *packet;
+  query::DataPacket *packet = response->mutable_data();
   vector<Column*> *chunk;
   Column *col;
 
@@ -389,13 +391,13 @@ void UnionOperation::consume(query::DataResponse *response) {
     chunk_size = std::min(DEFAULT_CHUNK_SIZE, size - from_row);
 
     for (uint32_t i = 0; i < types.size(); i++) {
-      while (ix != types[i]) { // add dummy column
+      while (ix != columns[i]) { // add dummy column
+        // TODO introduce ColumnChunk<void> that always fails
         col = new ColumnChunk<int>();
         col->size = chunk_size;
         chunk->push_back(col);
         ix++;
       }
-      packet = response->mutable_data();
       if (types[i] == query::INT)
         col = deserializeChunk<int>(from_row, packet->data(i).c_str(), chunk_size);
       else if (types[i] == query::DOUBLE)
@@ -406,8 +408,8 @@ void UnionOperation::consume(query::DataResponse *response) {
       chunk->push_back(col);
     }
     cache.push(chunk);
+    from_row += chunk_size;
   }
-  from_row += DEFAULT_CHUNK_SIZE;
 }
 
 std::ostream& UnionOperation::debugPrint(std::ostream& output) {

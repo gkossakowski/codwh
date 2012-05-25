@@ -61,8 +61,6 @@ class WorkerNode {
     void getJob();
     /** Wait until any data request occurs */
     void getRequest();
-    /** Wait until any data response occurs */
-    void getResponse();
 
 
     /** Tries to send accumulated data to a consumer */
@@ -87,6 +85,8 @@ class WorkerNode {
 
     /** Send message using network */
     void send(query::DataRequest* request);
+    /** Wait until any data response occurs */
+    void getResponse();
 
     /** Gets a communication message from network interface */
     query::Communication* getMessage(bool blocking);
