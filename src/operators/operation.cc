@@ -110,6 +110,7 @@ ScanOperationOwn::~ScanOperationOwn() {
     delete providers[i];
   }
 }
+// }}}
 
 // ComputeOperation {{{
 ComputeOperation::ComputeOperation(const query::ComputeOperation& oper) {
@@ -243,12 +244,7 @@ void hashSourceColumns(const vector<Column*>* sourceColumns, vector<int> which,
   assert(which.size() > 0);
   int size = (*sourceColumns)[which[0]]->size;
   columnsHash->size = size;
-  // zero the hash column
-  for (int i = 0; i < size; i++) {
-    any_t zero;
-    memset(&zero, 0, sizeof(any_t));
-    columnsHash->take(zero, i);
-  }
+  columnsHash->zero();
   for (unsigned int i = 0; i < which.size(); i++) {
     (*sourceColumns)[which[i]]->hash(columnsHash);
   }
@@ -263,6 +259,7 @@ vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
     }
   }
   if (hashColumns.size() > 0) {
+    assert(receiversCount > 1);
     hashSourceColumns(sourceColumns, hashColumns, columnsHash);
     size_t* hashes = static_cast<ColumnChunk<size_t>*>(columnsHash)->chunk;
     for (int i = 0; i < columnsHash->size; i++) {
@@ -278,7 +275,7 @@ vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
     }
   } else {
     assert(receiversCount == 1);
-    for (int i = 0; i < columns.size(); i++) {
+    for (unsigned i = 0; i < columns.size() ; i++) {
       Column* sourceCol = (*sourceColumns)[columns[i]];
       Column* destCol = buckets[0][i];
       any_t data;
