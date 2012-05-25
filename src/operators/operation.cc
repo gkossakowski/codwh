@@ -308,6 +308,7 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   assert(oper.column_size() == oper.type_size());
 
   firstPull = true;
+  finished = 0;
 
   sourcesNode = vector<int>(oper.source_size());
   sourcesStripe = vector<int>(oper.source_size());
