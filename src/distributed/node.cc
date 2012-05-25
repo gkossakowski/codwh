@@ -23,10 +23,12 @@ query::Communication* WorkerNode::getMessage(bool blocking) {
     data = nei->ReadPacketNotBlocking(&data_len);
     if (NULL == data)
       return NULL;
+  } else {
+    data = nei->ReadPacketBlocking(&data_len);
   }
-  data = nei->ReadPacketBlocking(&data_len);
   message = new query::Communication();
   message->ParseFromString(string(data, data_len));
+  std::cout << "Got message:\n" << message->DebugString() << std::endl;
 
   delete[] data;
   return message;
@@ -183,8 +185,13 @@ void WorkerNode::flushBucket(int bucket) {
 
 void WorkerNode::send(query::DataRequest* request) {
   string msg;
-  request->SerializeToString(&msg);
+  query::Communication com;
+  com.data_request();
+  request->GetReflection()->Swap(request, com.mutable_data_request());
+  com.SerializeToString(&msg);
+  std::cout << "Sending message: \n" << com.DebugString() << std::endl;
   nei->SendPacket(request->node(), msg.c_str(), msg.size());
+  request->GetReflection()->Swap(request, com.mutable_data_request());
 }
 
 void WorkerNode::sendEof() {
