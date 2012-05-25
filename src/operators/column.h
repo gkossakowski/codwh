@@ -10,6 +10,7 @@
 #include "filter.h"
 #include "factory.h"
 #include "global.h"
+#include "node_environment/node_environment.h"
 #include <boost/functional/hash.hpp>
 
 union any_t {
@@ -229,12 +230,13 @@ class ColumnProvider : public Node {
     virtual query::ColumnType getType() = 0;
 };
 
+// ColumnProviderServer {{{
 template<class T>
-class ColumnProviderImpl : public ColumnProvider {
+class ColumnProviderServer : public ColumnProvider {
   ColumnChunk<T> columnCache;
   int columnIndex;
  public:
-  ColumnProviderImpl(int id): columnIndex(id) {}
+  ColumnProviderServer(int id): columnIndex(id) {}
 
   inline Column* pull();
 
@@ -250,7 +252,7 @@ class ColumnProviderImpl : public ColumnProvider {
 
 template<>
 inline Column*
-ColumnProviderImpl<int>::pull() {
+ColumnProviderServer<int>::pull() {
   columnCache.size =
     Factory::server->GetInts(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
@@ -258,7 +260,7 @@ ColumnProviderImpl<int>::pull() {
 
 template<>
 inline Column*
-ColumnProviderImpl<double>::pull() {
+ColumnProviderServer<double>::pull() {
   columnCache.size =
     Factory::server->GetDoubles(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
@@ -266,12 +268,12 @@ ColumnProviderImpl<double>::pull() {
 
 template<>
 inline Column*
-ColumnProviderImpl<char>::pull() {
+ColumnProviderServer<char>::pull() {
   columnCache.size =
     Factory::server->GetBitBools(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
 }
-
+// }}}
 
 template <class T>
 inline ColumnChunk<T>*
@@ -283,6 +285,54 @@ deserializeChunk(int from_row, const char bytes[], size_t rows) {
   std::copy(bytes + from_byte, bytes + from_byte + rows * type_size, col->chunk);
   return col;
 }
+
+// ColumnProviderFile {{{
+template<class T>
+class ColumnProviderFile : public ColumnProvider {
+  ColumnChunk<T> columnCache;
+  DataSourceInterface* source;
+  int columnIndex;
+ public:
+  ColumnProviderFile(DataSourceInterface* source_, int id):
+    source(source_), columnIndex(id) {}
+
+  inline Column* pull();
+
+  query::ColumnType getType() {
+    return global::getType<T>();
+  }
+
+  std::ostream& debugPrint(std::ostream& out) {
+    return out << "ColumnProviderFile(" << columnIndex << ": "
+        << global::getTypeName<T>() << ")";
+  }
+};
+
+
+template<>
+inline Column*
+ColumnProviderFile<int>::pull() {
+  columnCache.size =
+      source->GetInts(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
+  return &columnCache;
+}
+
+template<>
+inline Column*
+ColumnProviderFile<double>::pull() {
+  columnCache.size =
+      source->GetDoubles(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
+  return &columnCache;
+}
+
+template<>
+inline Column*
+ColumnProviderFile<char>::pull() {
+  columnCache.size =
+      source->GetBitBools(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
+  return &columnCache;
+}
+// }}}
 
 
 #endif

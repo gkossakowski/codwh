@@ -92,6 +92,9 @@ class WorkerNode {
     query::Communication* getMessage(bool blocking);
     /** Parses a communication method and stores contained information */
     void parseMessage(query::Communication *message, bool allow_data);
+
+    /** Open new DataSourceInterface, caller is responsible for deallocation */
+    DataSourceInterface* openSourceInterface(int fileId);
 };
 
 class SchedulerNode : public WorkerNode {

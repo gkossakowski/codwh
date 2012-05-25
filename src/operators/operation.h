@@ -45,6 +45,17 @@ class ScanOperation : public Operation {
   ~ScanOperation();
 };
 
+class ScanOperationOwn : public Operation {
+  vector<ColumnProvider*> providers;
+  DataSourceInterface* source;
+ public:
+  ScanOperationOwn(const query::ScanOperationOwn& oper);
+  vector<Column*>* pull();
+  vector<query::ColumnType> getTypes();
+  std::ostream& debugPrint(std::ostream& output);
+  ~ScanOperationOwn();
+};
+
 class ComputeOperation : public Operation {
   Operation* source;
   vector<Expression*> expressions;

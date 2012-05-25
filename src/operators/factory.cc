@@ -16,6 +16,8 @@ Operation*
 Factory::createOperation(const query::Operation& operation) {
   if (operation.has_scan()) {
     return new ScanOperation(operation.scan());
+  } else if (operation.has_scan_own()) {
+    return new ScanOperationOwn(operation.scan_own());
   } else if (operation.has_compute()) {
     return new ComputeOperation(operation.compute());
   } else if (operation.has_filter()) {
@@ -40,11 +42,26 @@ ColumnProvider*
 Factory::createColumnProvider(int columnId, query::ColumnType type) {
   switch (type) {
     case query::INT:
-      return new ColumnProviderImpl<int>(columnId);
+      return new ColumnProviderServer<int>(columnId);
     case query::DOUBLE:
-      return new ColumnProviderImpl<double>(columnId);
+      return new ColumnProviderServer<double>(columnId);
     case query::BOOL:
-      return new ColumnProviderImpl<char>(columnId);
+      return new ColumnProviderServer<char>(columnId);
+    default:
+      assert(false);
+  }
+}
+
+ColumnProvider*
+Factory::createFileColumnProvider(DataSourceInterface* source,
+    int columnId, query::ColumnType type) {
+  switch (type) {
+    case query::INT:
+      return new ColumnProviderFile<int>(source, columnId);
+    case query::DOUBLE:
+      return new ColumnProviderFile<double>(source, columnId);
+    case query::BOOL:
+      return new ColumnProviderFile<char>(source, columnId);
     default:
       assert(false);
   }

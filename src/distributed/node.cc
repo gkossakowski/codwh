@@ -273,6 +273,12 @@ void WorkerNode::run() {
   return ;
 }
 
+DataSourceInterface*
+WorkerNode::openSourceInterface(int fileId) {
+  return nei->OpenDataSourceFile(fileId);
+}
+
+
 
 Packet::Packet(vector<Column*> &view)
   : size(0), full(false)
