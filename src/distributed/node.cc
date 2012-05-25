@@ -12,6 +12,7 @@ namespace global {
 
 WorkerNode::WorkerNode(NodeEnvironmentInterface *nei) : nei(nei) {
   global::worker = this;
+  assert(nei != NULL);
 }
 
 query::Communication* WorkerNode::getMessage(bool blocking) {

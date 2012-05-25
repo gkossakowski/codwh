@@ -14,11 +14,11 @@ struct Packet {
   Packet(uint32_t size)
         : data_(new char[size]()), size_(size) {};
 
-  virtual ~Packet() { if (data_ != NULL)  delete[] data_;};
+  virtual ~Packet() { fprintf(stdout, "~Packet\n"); if (data_ != NULL)  delete[] data_; };
 
   char* release_data() {
     char* result = data_;
-    data_  =NULL;
+    data_  = NULL;
     return result;
   }
 
@@ -26,7 +26,7 @@ struct Packet {
 
   std::size_t size() const { return size_; }
 
- private:
+public:
   char* data_;
   std::size_t size_;
 };
