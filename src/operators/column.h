@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <typeinfo>
 
 #include "filter.h"
 #include "factory.h"
