@@ -320,12 +320,16 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   columns = vector<int>(oper.column_size());
   int maxx = -1;
   for (unsigned i = 0 ; i < columns.size() ; ++i) {
-    columns[i] = oper.column().Get(i);
+    columns[i] = oper.column(i);
     if (columns[i] > maxx)
       maxx = columns[i];
   }
 
   int typeSize = maxx + 1;
+  columnIsUsed = vector<bool>(typeSize, false);
+  for (unsigned i = 0 ; i < columns.size() ; ++i) {
+    columnIsUsed[columns[i]] = true;
+  }
 
   types = vector<query::ColumnType>(typeSize);
   unsigned n = oper.type_size();
@@ -394,18 +398,18 @@ void UnionOperation::consume(query::DataResponse *response) {
 
   while (from_row < size) {
     chunk = new vector<Column*>;
-    int ix = 0;
 
     chunk_size = std::min(DEFAULT_CHUNK_SIZE, size - from_row);
 
     for (uint32_t i = 0; i < types.size(); i++) {
-      while (ix != columns[i]) { // add dummy column
+      if (!columnIsUsed[i]) {
+        // TODO: dont waste memory here
         // TODO introduce ColumnChunk<void> that always fails
         col = new ColumnChunk<int>();
         col->size = chunk_size;
-        printf("adding dummy column with index %d\n", ix);
+        printf("adding dummy column with index %d\n", i);
         chunk->push_back(col);
-        ix++;
+        continue;
       }
       if (types[i] == query::INT)
         col = deserializeChunk<int>(from_row, packet->data(i).c_str(), chunk_size);

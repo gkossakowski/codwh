@@ -118,6 +118,7 @@ class UnionOperation : public Operation {
   vector<int> sourcesNode;
   vector<int> sourcesStripe;
   vector<int> columns;
+  vector<bool> columnIsUsed;
   uint32_t finished;
   vector<query::ColumnType> types;
   std::queue<vector<Column*>*> cache;
