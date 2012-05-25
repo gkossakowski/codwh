@@ -129,11 +129,11 @@ class NodeEnvironment : public NodeEnvironmentInterface {
   }
 
  private:
-  int kQueryId;
   uint32 node_number_;
   uint32 node_count_;
   boost::scoped_ptr<NetworkInput> input_;
   std::vector<NetworkOutput*> outputs_;
+  int kQueryId;
 };
 
 } // namespace
