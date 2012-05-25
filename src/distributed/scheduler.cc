@@ -250,7 +250,7 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   // we divide workers into two groups that will be used for two consecutive layers of stripes
   vector<int> nodeIds;
   vector<int> nodeIdsNext;
-  for (int i = 1; i <= nodesPerStripe; i++) {
+  for (int i = 2; i <= nodesPerStripe; i++) {
     nodeIds.push_back(i);
   }
   for (uint32_t i = nodesPerStripe+1; i <= nodes; i++) {
@@ -313,7 +313,7 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   {
     query::Operation lastStripe = stripes->back();
     assignNodesToUnion(lastStripe, previousStripeIds);
-    sendJob(lastStripe, 0, stripeId);
+    sendJob(lastStripe, 1, stripeId);
   }
 }
 
@@ -354,7 +354,8 @@ void SchedulerNode::run(const query::Operation &op) {
     std::cout << "STRIPE " << i << std::endl;
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
-  schedule(stripes, nei->nodes_count() - 1, numberOfInputFiles);
+  // node[0]: scheduler, node[1]: final operation
+  schedule(stripes, nei->nodes_count() - 2, numberOfInputFiles);
   flushJobs();
   delete stripes;
   
