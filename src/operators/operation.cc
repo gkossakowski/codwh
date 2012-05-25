@@ -380,12 +380,13 @@ vector<Column*>* UnionOperation::pull() {
 }
 
 void UnionOperation::consume(query::DataResponse *response) {
+  printf("UnionOperation::consume...\n");
   int from_row = 0;
   assert(response->data().data(0).size() % global::getTypeSize(response->data().type(0)) == 0);
   int size = response->data().data(0).size() /
              global::getTypeSize(response->data().type(0));
   int chunk_size;
-
+  printf("size = %d\n", size);
 
   query::DataPacket *packet = response->mutable_data();
   vector<Column*> *chunk;
@@ -402,6 +403,7 @@ void UnionOperation::consume(query::DataResponse *response) {
         // TODO introduce ColumnChunk<void> that always fails
         col = new ColumnChunk<int>();
         col->size = chunk_size;
+        printf("adding dummy column with index %d\n", ix);
         chunk->push_back(col);
         ix++;
       }
