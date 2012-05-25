@@ -368,13 +368,16 @@ vector<Column*>* UnionOperation::pull() {
       assert(dataResponse->data().data_size() == dataResponse->data().type_size());
       processReceivedData(dataResponse);
     } else {
+      printf("Got EOF from %d\n", dataResponse->node());
       finished++; // got EOF
     }
 
     if (finished == sourcesNode.size())
+      printf("Union consumed all data\n");
       return &eof;
   }
-
+  
+  printf("collected the whole chunk in UnionOperation:pull, returning\n");
   // ask cache
   vector<Column*> *data = cache.front();
   cache.pop();
@@ -422,6 +425,7 @@ void UnionOperation::processReceivedData(query::DataResponse *response) {
     cache.push(chunk);
     from_row += chunk_size;
   }
+  printf("UnionOperation::consume... END\n");
 }
 
 std::ostream& UnionOperation::debugPrint(std::ostream& output) {

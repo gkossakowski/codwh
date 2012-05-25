@@ -219,7 +219,7 @@ void WorkerNode::sendRequest(int provider_stripe, int number, int node) {
   request->set_number(number);
 
   com.SerializeToString(&msg);
-  std::cout << "Sending data request: \n" << com.DebugString() << std::endl;
+  std::cout << "Sending data request to " << node << ": "  << com.DebugString() << std::endl;
   nei->SendPacket(node, msg.c_str(), msg.size());
 }
 
