@@ -18,7 +18,7 @@ using std::pair;
 
 /** packet size in bytes */
 
-class Packet;
+class NodePacket;
 class WorkerNode;
 
 namespace global {
@@ -45,7 +45,7 @@ class WorkerNode {
 
     /** Output buffer */
     int full_packets;
-    vector< queue<Packet*> > output;
+    vector< queue<NodePacket*> > output;
     vector<int> pending_requests;
     vector<int> output_counters;
     vector<int> consumers_map;
@@ -123,7 +123,7 @@ class SchedulerNode : public WorkerNode {
     virtual void run(const query::Operation &op);
 };
 
-class Packet {
+class NodePacket {
   private:
     vector<char *> columns;
     vector<uint32_t> offsets;
@@ -133,13 +133,13 @@ class Packet {
 
   public:
     bool full; /** only Packet should write to this! */
-    Packet(vector<Column*> &view);
-    Packet(const char* data, size_t data_len);
+    NodePacket(vector<Column*> &view);
+    NodePacket(const char* data, size_t data_len);
 
     void consume(vector<Column*> view);
     query::DataPacket* serialize();
 
-    ~Packet();
+    ~NodePacket();
 };
 
 #endif // DISTRIBUTED_NODE_H

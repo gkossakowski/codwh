@@ -124,10 +124,10 @@ void WorkerNode::parseRequests() {
 }
 
 void WorkerNode::packData(vector<Column*> &data, int bucket) {
-  queue<Packet*> &buck = output[bucket];
+  queue<NodePacket*> &buck = output[bucket];
 
   if (buck.size() == 0 || buck.back()->full)
-    buck.push(new Packet(data));
+    buck.push(new NodePacket(data));
   buck.back()->consume(data);
 
   if (buck.back()->full)
@@ -284,7 +284,7 @@ WorkerNode::openSinkInterface() {
 }
 
 
-Packet::Packet(vector<Column*> &view)
+NodePacket::NodePacket(vector<Column*> &view)
   : size(0), full(false)
 {
   size_t row_size = 0;
@@ -307,7 +307,7 @@ Packet::Packet(vector<Column*> &view)
 }
 
 /** Tries to consume a view. If it's too much data - returns false. */
-void Packet::consume(vector<Column*> view){
+void NodePacket::consume(vector<Column*> view){
   if (full) assert(false); // should check if it's full before calling!
 
   for (uint32_t i = 0; i < view.size(); i++)
@@ -318,7 +318,7 @@ void Packet::consume(vector<Column*> view){
     full = true;
 }
 
-query::DataPacket* Packet::serialize() {
+query::DataPacket* NodePacket::serialize() {
   query::DataPacket *packet = new query::DataPacket();
 
   for (uint32_t i = 0; i < types.size(); i++) {
@@ -328,11 +328,11 @@ query::DataPacket* Packet::serialize() {
   return packet;
 }
 
-Packet::Packet(const char* data, size_t data_len) {
+NodePacket::NodePacket(const char* data, size_t data_len) {
   // TODO : IMPLEMENT THIS
 }
 
-Packet::~Packet() {
+NodePacket::~NodePacket() {
   for(uint32_t i = 0; i < columns.size(); i++)
     delete[] columns[i];
 }
