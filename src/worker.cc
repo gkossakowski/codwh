@@ -38,6 +38,7 @@ void handler(int sig) {
 
 int main(int argc, char** argv) {
   signal(SIGSEGV, handler);
+  signal(SIGFPE, handler);
   /** Set up network environment */
   boost::scoped_ptr<NodeEnvironmentInterface> nei(
       CreateNodeEnvironment(argc, argv));
