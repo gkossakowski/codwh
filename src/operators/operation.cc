@@ -70,7 +70,7 @@ ScanOperation::~ScanOperation() {
 ScanFileOperation::ScanFileOperation(const query::ScanFileOperation& oper) {
   int n = oper.column_size();
   cache = vector<Column*>(n);
-  source = global::worker->openSourceInterface(oper.source());
+  source = global::worker->communication.openSourceInterface(oper.source());
   providers = vector<ColumnProvider*>(n);
 
   for (int i = 0 ; i < n ; ++i) {
@@ -347,8 +347,8 @@ vector<Column*>* UnionOperation::pull() {
   if (firstPull) {
     // Ask everyone
     for (unsigned i = 0 ; i < sourcesNode.size() ; ++i) {
-      global::worker->sendRequest(sourcesStripe[i], 1,
-		      sourcesNode[i]); // TODO: set it more reasonable
+      global::worker->communication.inputBuffer.sendRequest(sourcesStripe[i], 1,
+                                sourcesNode[i]); // TODO: set it more reasonable
     }
     firstPull = false;
   }
@@ -356,15 +356,15 @@ vector<Column*>* UnionOperation::pull() {
   // preparing new data
   query::DataResponse* dataResponse;
   while (cache.size() == 0) {
-    global::worker->getResponse();
-    dataResponse = global::worker->responses.front();
-    global::worker->responses.pop();
+    global::worker->communication.getResponse();
+    dataResponse = global::worker->communication.responses.front();
+    global::worker->communication.responses.pop();
 
     // ask for more
     if (dataResponse->number() > 0) {
       query::DataRequest request;
-      global::worker->sendRequest(nodeToStripe[dataResponse->node()], 1, // TODO: nie wiem czy to dobre odwzorowanie
-		      	          dataResponse->node()); // TODO: set it more reasonable
+      global::worker->communication.inputBuffer.sendRequest(nodeToStripe[dataResponse->node()], 1, // TODO: nie wiem czy to dobre odwzorowanie
+                                  dataResponse->node()); // TODO: set it more reasonable
       assert(dataResponse->data().data_size() == dataResponse->data().type_size());
       processReceivedData(dataResponse);
     } else {
@@ -442,7 +442,7 @@ vector<query::ColumnType> UnionOperation::getTypes() {
 // FinalOperation {{{
 FinalOperation::FinalOperation(const query::FinalOperation& oper) {
   source = Factory::createOperation(oper.source());
-  sinkProxy = new SinkToServerProxy(global::worker->openSinkInterface());
+  sinkProxy = new SinkToServerProxy(global::worker->communication.openSinkInterface());
 }
 
 vector<Column*>* FinalOperation::pull() {

@@ -186,7 +186,7 @@ message DataResponse {
   optional DataPacket data = 3;
 }
 
-message Communication {
+message NetworkMessage {
   message Stripe {
     required Operation operation = 1;
     required int32 stripe = 2;

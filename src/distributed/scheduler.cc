@@ -334,7 +334,7 @@ void SchedulerNode::flushJobs() {
     if (nodesJobs[node].size() == 0)
       continue;
     
-    query::Communication com;
+    query::NetworkMessage com;
     for (uint32_t i = 0; i < nodesJobs[node].size(); i++) {
       com.add_stripe();
       com.mutable_stripe(i)->set_stripe(nodesJobs[node][i].first);
@@ -344,7 +344,7 @@ void SchedulerNode::flushJobs() {
     
     com.SerializeToString(&msg);
     printf("Sending jobs to worker[%d]\n\n%s", node, com.DebugString().c_str());
-    nei->SendPacket(node, msg.c_str(), msg.size());
+    communication.nei->SendPacket(node, msg.c_str(), msg.size());
   }
 }
 
@@ -359,7 +359,7 @@ void SchedulerNode::run(const query::Operation &op) {
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
   // node[0]: scheduler, node[1]: final operation
-  schedule(stripes, nei->nodes_count(), numberOfInputFiles);
+  schedule(stripes, communication.nei->nodes_count(), numberOfInputFiles);
   flushJobs();
   delete stripes;
   
