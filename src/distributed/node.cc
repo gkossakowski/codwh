@@ -1,5 +1,6 @@
 #include <vector>
 #include <queue>
+#include <stdarg.h>
 
 #include "proto/operations.pb.h"
 #include "node_environment/node_environment.h"
@@ -46,24 +47,28 @@ void WorkerNode::parseMessage(query::Communication *message, bool allow_data) {
   } else if (allow_data && message->has_data_response()) {
     responses.push(message->release_data_response());
   } else {
-    std::cout << "ERROR: WorkerNode::parseMessage(" << message->DebugString() << ", "
-      << allow_data << ")\n";
-    std::cout << "Stripe size: " << message->stripe_size() << "\n";
-    std::cout << "Data request: " << message->has_data_request() << "\n";
-    std::cout << "Data response: " << message->has_data_response() << std::endl;
+    debugPrint("ERROR: parseMessage(%s, %b)", message->DebugString().c_str(), allow_data);
     assert(false);
   }
 
   delete message;
 }
 
-void WorkerNode::debugPrint(const std::string msg) {
-  printf("Worker[%d]: %s\n", nei->my_node_number(), msg.c_str());
+void WorkerNode::debugPrint(const char* fmt, ...) {
+  va_list ap;
+  printf("Worker[%d]: ", nei->my_node_number());
+   
+  va_start(ap, fmt);
+  vfprintf(stdout, fmt, ap);
+  va_end(ap);
+
+  printf("\n");
+  fflush(stdout);
 }
 
 void WorkerNode::getJob() {
   /** Wait until a job occures, than store it in a jobs queue. */
-  std::cout << "Awaiting for a job" << std::endl;
+  debugPrint("Awaiting for a job");
   query::Communication *message;
 
   while (jobs.size() == 0) {
@@ -76,7 +81,7 @@ void WorkerNode::getJob() {
 
 void WorkerNode::getRequest() {
   /** Wait until a data request occures, than store it in a requests queue */
-  std::cout << "Awaiting for data request" << std::endl;
+  debugPrint("Awaiting for data request");
   query::Communication *message;
 
   while (requests.size() == 0) {
@@ -87,7 +92,7 @@ void WorkerNode::getRequest() {
 }
 
 void WorkerNode::getResponse() {
-  std::cout << "Awaiting for data response" << std::endl;
+  debugPrint("Awaiting for data response");
   query::Communication *message;
 
   while (responses.size() == 0) {
@@ -117,7 +122,7 @@ void WorkerNode::parseRequests() {
   int bucket;
   query::DataRequest *request;
 
-  printf("requests.size = %lu\n", requests.size());
+  debugPrint("requests.size = %lu", requests.size());
   while (requests.size() > 0) {
     request = requests.back();
     requests.pop();
@@ -130,7 +135,8 @@ void WorkerNode::parseRequests() {
     }
 
     bucket = request->consumer_stripe() % output.size();
-    printf("request from stripe %d, pending for bucket %d\n", request->consumer_stripe(), bucket);
+    debugPrint("request from stripe %d, pending for bucket %d",
+        request->consumer_stripe(), bucket);
     consumers_map[bucket] = request->node();
     pending_requests[bucket]++;
 
@@ -169,8 +175,7 @@ void WorkerNode::packData(vector<Column*> &data, int bucket) {
 }
 
 void WorkerNode::flushBucket(int bucket) {
-  debugPrint("flushBucket...");
-  printf("bucket = %d\n", bucket);
+  debugPrint("flushBucket(%d)", bucket);
   if (pending_requests[bucket] == 0) {
     debugPrint("flushBucket: no pending request for bucket");
     return;
@@ -219,7 +224,7 @@ void WorkerNode::sendRequest(int provider_stripe, int number, int node) {
   request->set_number(number);
 
   com.SerializeToString(&msg);
-  std::cout << "Sending data request to " << node << ": "  << com.DebugString() << std::endl;
+  debugPrint("Sending data request to %d msg={%s}", node, com.DebugString().c_str());
   nei->SendPacket(node, msg.c_str(), msg.size());
 }
 
@@ -228,7 +233,7 @@ void WorkerNode::sendEof() {
   query::DataResponse *response = com.mutable_data_response();
   string msg;
 
-  std::cout << " Worker " << nei->my_node_number() << ": sendEof()\n";
+  debugPrint("sendEof");
 
   response->set_node(nei->my_node_number());
   response->set_number(-1); // EOF response
@@ -244,21 +249,22 @@ void WorkerNode::sendEof() {
 }
 
 int WorkerNode::execPlan(query::Operation *op) {
-  printf("Worker[%d] stripe[%d] job proto tree:\n%s",
+  debugPrint("Worker[%d] stripe[%d] job proto tree:\n%s",
          nei->my_node_number(), stripe, op->DebugString().c_str());
-  std::cout << std::endl; // ugly buffer flush
   Operation* operation = Factory::createOperation(*op);
   FinalOperation* finalOperation = dynamic_cast<FinalOperation*>(operation);
 
   if (NULL != finalOperation) {
     int consumeCount = 0;
+    int totalConsumeCount = 0;
     while ((consumeCount = finalOperation->consume()) > 0) {
-      printf(" Worker %d: consuming %d\n",
-          nei->my_node_number(), consumeCount); 
+      totalConsumeCount += consumeCount;
+      debugPrint("[DATA] consuming %8d (total %8d)", consumeCount, totalConsumeCount); 
     }
   } else {
     vector< vector<Column*> > *buckets;
     int buckets_num = 0;
+    int totalPullCount = 0;
     int size;
     do {
       size = 0;
@@ -271,9 +277,8 @@ int WorkerNode::execPlan(query::Operation *op) {
         resetOutput(buckets_num);
       }
 
-
-      printf(" Worker %d: pulling %d\n",
-          nei->my_node_number(), (*buckets)[0][0]->size); 
+      totalPullCount += (*buckets)[0][0]->size;
+      debugPrint("[DATA] pulling %8d (total %8d)", (*buckets)[0][0]->size, totalPullCount); 
       for (int i = 0; i < buckets_num; i++) {
         size += (*buckets)[i][0]->size;
         packData((*buckets)[i], i);

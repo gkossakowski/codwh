@@ -69,7 +69,7 @@ class WorkerNode {
     /** Sends EOF messages to consumers */
     void sendEof();
   
-    void debugPrint(const std::string msg);
+    void debugPrint(const char* str, ...);
 
   public:
     WorkerNode(NodeEnvironmentInterface *nei);
