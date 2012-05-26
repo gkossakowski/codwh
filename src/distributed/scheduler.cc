@@ -244,16 +244,20 @@ void assignFileToScan(query::Operation& stripe, int fileToScan) {
 }
 
 void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, int numberOfFiles) {
-  int nodesPerStripe = nodes / 2;
+  // we reserve two nodes:
+  // node[0]: scheduler
+  // node[1]: final operation
+  // nodesPerStripe is half rounded up
+  int nodesPerStripe = (nodes - 2 + 1) / 2;
   // we don't handle situation when we have one worker only
   assert(nodesPerStripe > 0);
   // we divide workers into two groups that will be used for two consecutive layers of stripes
   vector<int> nodeIds;
   vector<int> nodeIdsNext;
-  for (int i = 2; i <= nodesPerStripe; i++) {
+  for (int i = 2; i < 2 + nodesPerStripe; i++) {
     nodeIds.push_back(i);
   }
-  for (uint32_t i = nodesPerStripe+1; i <= nodes; i++) {
+  for (uint32_t i = 2 + nodesPerStripe; i < nodes; i++) {
     nodeIdsNext.push_back(i);
   }
   
@@ -355,7 +359,7 @@ void SchedulerNode::run(const query::Operation &op) {
     std::cout << (*stripes)[i].DebugString() << std::endl;
   }
   // node[0]: scheduler, node[1]: final operation
-  schedule(stripes, nei->nodes_count() - 2, numberOfInputFiles);
+  schedule(stripes, nei->nodes_count(), numberOfInputFiles);
   flushJobs();
   delete stripes;
   
