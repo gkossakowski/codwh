@@ -19,8 +19,8 @@ class SchedulerNode : public WorkerNode {
     vector< vector< pair<int, query::Operation> > > nodesJobs;
 
   protected:
-    /** Slice query into stripes */
-    vector<query::Operation>* makeStripes(query::Operation query);
+    /** Slice query into fragments */
+    vector<query::Operation>* makeFragments(query::Operation query);
     /** Fill in and send stripes for a given number of nodes */
     void schedule(vector<query::Operation> *stripe, uint32_t nodes, int numberOfFiles);
     /** Add job to nodes jobs queue, the given job object is destroyed */
