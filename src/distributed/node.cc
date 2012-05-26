@@ -120,17 +120,27 @@ void WorkerNode::resetOutput(int buckets) {
 void WorkerNode::parseRequests() {
   debugPrint("parseRequests...");
   int bucket;
+  int provider_stripe;
   query::DataRequest *request;
 
   debugPrint("requests.size = %lu", requests.size());
   while (requests.size() > 0) {
-    request = requests.back();
+    request = requests.front();
     requests.pop();
-    if (request->provider_stripe() != stripe) {
+    provider_stripe = request->provider_stripe();
+    if (provider_stripe != stripe) {
       // future stripe, save for later
-      assert(request->provider_stripe() > stripe);
-      debugPrint("delayed_requests.push(...)");
-      delayed_requests.push(request);
+      assert(provider_stripe > stripe);
+      debugPrint("[QUEUE] Add request for strip %d while processing stripe %d",
+          provider_stripe, stripe);
+      typeof(delayed_requests.begin()) it = delayed_requests.find(provider_stripe);
+      if (it == delayed_requests.end()) {
+        queue<query::DataRequest*> q;
+        q.push(request);
+        delayed_requests.insert(make_pair(provider_stripe, q));
+      } else {
+        it->second.push(request);
+      }
       continue;
     }
 
@@ -202,7 +212,7 @@ void WorkerNode::flushBucket(int bucket) {
     response->set_number(output_counters[bucket]); // set number
     r->Swap(response->mutable_data(), packet); // set data
     com.SerializeToString(&msg);
-    debugPrint("sending data response");
+    debugPrint("[SEND] sending data response to %d", consumers_map[bucket]);
     nei->SendPacket(consumers_map[bucket], msg.c_str(), msg.size()); // send
 
     output[bucket].pop(); // remove packet from queue
@@ -224,7 +234,7 @@ void WorkerNode::sendRequest(int provider_stripe, int number, int node) {
   request->set_number(number);
 
   com.SerializeToString(&msg);
-  debugPrint("Sending data request to %d msg={%s}", node, com.DebugString().c_str());
+  debugPrint("[SEND] Sending data request to %d msg={%s}", node, com.DebugString().c_str());
   nei->SendPacket(node, msg.c_str(), msg.size());
 }
 
@@ -277,12 +287,12 @@ int WorkerNode::execPlan(query::Operation *op) {
         resetOutput(buckets_num);
       }
 
-      totalPullCount += (*buckets)[0][0]->size;
-      debugPrint("[DATA] pulling %8d (total %8d)", (*buckets)[0][0]->size, totalPullCount); 
       for (int i = 0; i < buckets_num; i++) {
         size += (*buckets)[i][0]->size;
         packData((*buckets)[i], i);
       }
+      totalPullCount += size;
+      debugPrint("[DATA] pulling %8d (total %8d)", size, totalPullCount); 
     } while (size > 0);
 
     // we have all data; try to send it
@@ -316,7 +326,9 @@ void WorkerNode::run() {
     stripe = st->stripe();
     execPlan(st->mutable_operation());
     jobs.pop();
-    std::swap(requests, delayed_requests);
+    assert(requests.empty()); // no pending request after we finish the stripe
+    requests = delayed_requests[stripe];
+    delayed_requests.erase(stripe);
   };
   return ;
 }

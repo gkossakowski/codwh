@@ -32,8 +32,10 @@ class WorkerNode {
   protected:
     NodeEnvironmentInterface *nei;
     queue<query::Communication::Stripe *> jobs;
+    // queue for data request for current stripe
     queue<query::DataRequest *> requests;
-    queue<query::DataRequest *> delayed_requests;
+    // key: stripe id -> queue of request for gievn id
+    map<int, queue<query::DataRequest *> > delayed_requests;
 
     /** Input buffer */
     map<int32_t, vector<int32_t> > sources;
