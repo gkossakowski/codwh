@@ -179,11 +179,12 @@ message DataPacket {
 }
 
 message DataResponse {
-  // Author of a request.
+  // Author of a response.
   required int32 node = 1;
+  required int32 stripe = 2;
   // number of the packet from given bucket, used for debugging
-  required int32 number = 2;
-  optional DataPacket data = 3;
+  required int32 number = 3;
+  optional DataPacket data = 4;
 }
 
 message NetworkMessage {

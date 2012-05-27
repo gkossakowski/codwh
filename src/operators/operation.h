@@ -123,7 +123,6 @@ class UnionOperation : public Operation {
   vector<query::ColumnType> types;
   std::queue<vector<Column*>*> cache;
   bool firstPull;
-  std::tr1::unordered_map<int, int> nodeToStripe;
   void processReceivedData(query::DataResponse *response);
   vector<Column*> eof;
  public:

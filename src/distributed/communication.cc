@@ -3,7 +3,7 @@
 
 void Communication::debugPrint(const char* fmt, ...) {
   va_list ap;
-  printf("Worker[%d]: ", nei->my_node_number());
+  printf("Worker[%d:%d]: ", nei->my_node_number(), *stripe);
 
   va_start(ap, fmt);
   vfprintf(stdout, fmt, ap);
