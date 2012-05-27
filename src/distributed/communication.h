@@ -24,6 +24,8 @@ class Communication {
   public:
     Communication(NodeEnvironmentInterface *nei, int *stripe)
       : stripe(stripe), nei(nei), inputBuffer(this), outputBuffer(this) {};
+
+    /** Log debugging messages */
     void debugPrint(const char* str, ...);
 
     int *stripe;

@@ -259,7 +259,7 @@ vector< vector<Column*> >* ShuffleOperation::bucketsPull() {
     }
   }
   if (hashColumns.size() > 0) {
-    assert(receiversCount > 1);
+    assert(receiversCount >= 1);
     hashSourceColumns(sourceColumns, hashColumns, columnsHash);
     size_t* hashes = static_cast<ColumnChunk<size_t>*>(columnsHash)->chunk;
     for (int i = 0; i < columnsHash->size; i++) {
@@ -315,7 +315,6 @@ UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   for (unsigned i = 0 ; i < sourcesNode.size() ; ++i) {
     sourcesNode[i] = oper.source().Get(i).node();
     sourcesStripe[i] = oper.source().Get(i).stripe();
-    nodeToStripe[sourcesNode[i]] = sourcesStripe[i];
   }
 
   columns = vector<int>(oper.column_size());
@@ -363,12 +362,13 @@ vector<Column*>* UnionOperation::pull() {
     // ask for more
     if (dataResponse->number() > 0) {
       query::DataRequest request;
-      global::worker->communication.inputBuffer.sendRequest(nodeToStripe[dataResponse->node()], 1, // TODO: nie wiem czy to dobre odwzorowanie
-                                  dataResponse->node()); // TODO: set it more reasonable
+      global::worker->communication.inputBuffer \
+        .sendRequest(dataResponse->stripe(), 1, dataResponse->node()); // TODO: set it more reasonable
       assert(dataResponse->data().data_size() == dataResponse->data().type_size());
       processReceivedData(dataResponse);
     } else {
-      printf("Got EOF from %d\n", dataResponse->node());
+      global::worker->communication.debugPrint("Got EOF from node %d stripe %d\n",
+          dataResponse->node(), dataResponse->stripe());
       finished++; // got EOF
     }
 
@@ -377,7 +377,7 @@ vector<Column*>* UnionOperation::pull() {
       return &eof;
     }
   }
-  
+
   printf("collected the whole chunk in UnionOperation:pull, returning\n");
   // ask cache
   vector<Column*> *data = cache.front();

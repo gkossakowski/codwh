@@ -45,8 +45,6 @@ class OutputBuffer {
 
     /** Tries to send accumulated data to a consumer */
     void flushBucket(int bucket);
-    /** Sends EOF messages to consumers */
-    void sendEof();
 };
 
 #endif

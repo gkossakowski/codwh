@@ -29,9 +29,9 @@ void OutputBuffer::parseRequests() {
     provider_stripe = request->provider_stripe();
     if (provider_stripe != *communication->stripe) {
       // future stripe, save for later
+      communication->debugPrint("[QUEUE] Add request for stripe %d while processing stripe %d from worker %d",
+                 provider_stripe, *communication->stripe, request->node());
       assert(provider_stripe > *communication->stripe);
-      communication->debugPrint("[QUEUE] Add request for strip %d while processing stripe %d",
-          provider_stripe, *communication->stripe);
       typeof(communication->delayed_requests.begin()) it =
              communication->delayed_requests.find(provider_stripe);
       if (it == communication->delayed_requests.end()) {
@@ -98,21 +98,29 @@ void OutputBuffer::flushBucket(int bucket) {
   assert(consumers_map[bucket] != -1); // we should know node number from request
 
   query::NetworkMessage com;
-  query::DataResponse *response = com.mutable_data_response();
-  query::DataPacket *packet;
-  const google::protobuf::Reflection *r = response->data().GetReflection();
+  query::DataResponse* response = com.mutable_data_response();
+  query::DataPacket* packet;
+  NodePacket* nodePacket;
+  const google::protobuf::Reflection* r = response->data().GetReflection();
   string msg;
 
   response->set_node(communication->nei->my_node_number());
+  response->set_stripe(*communication->stripe);
   // send data while we have a full packet and a pending request
   while (pending_requests[bucket] > 0 && output[bucket].front()->readyToSend) {
-    packet = output[bucket].front()->serialize();
+    nodePacket = output[bucket].front();
+    packet = nodePacket->serialize();
     output_counters[bucket]++; // increase packet number counter
-
-    response->set_number(output_counters[bucket]); // set number
-    r->Swap(response->mutable_data(), packet); // set data
-    com.SerializeToString(&msg);
-    communication->debugPrint("[SEND] sending data response to %d", consumers_map[bucket]);
+    if (nodePacket->isEOF()) {
+      response->set_number(-1);
+      com.SerializeToString(&msg);
+      communication->debugPrint("[SEND] sending EOF to %d", consumers_map[bucket]);
+    } else {
+      response->set_number(output_counters[bucket]); // set number
+      r->Swap(response->mutable_data(), packet); // set data
+      com.SerializeToString(&msg);
+      communication->debugPrint("[SEND] sending data response to %d", consumers_map[bucket]);
+    }
     communication->nei->SendPacket(consumers_map[bucket], msg.c_str(), msg.size()); // send
 
     output[bucket].pop(); // remove packet from queue
@@ -121,24 +129,3 @@ void OutputBuffer::flushBucket(int bucket) {
     delete packet; // dump packet
   }
 }
-
-void OutputBuffer::sendEof() {
-  query::NetworkMessage com;
-  query::DataResponse *response = com.mutable_data_response();
-  string msg;
-
-  communication->debugPrint("sendEof");
-
-  response->set_node(communication->nei->my_node_number());
-  response->set_number(-1); // EOF response
-  com.SerializeToString(&msg); // universal message for all consumers
-
-  for (uint32_t i = 0; i < output.size(); i++) {
-    while (consumers_map[i] == -1) { // unknown consumer!
-      communication->getRequest();
-      parseRequests(); // updates the consumer_map while parsing a request
-    }
-    communication->nei->SendPacket(consumers_map[i], msg.c_str(), msg.size());
-  }
-}
-

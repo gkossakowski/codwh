@@ -26,7 +26,12 @@ class NodePacket {
 
   public:
     bool readyToSend; /** only Packet should write to this! */
+    // To create EOF past empty vector
     NodePacket(vector<Column*> &view);
+    bool isEOF() {
+      return columns.empty();
+    }
+
     void consume(vector<Column*> view);
     query::DataPacket* serialize();
     virtual ~NodePacket();

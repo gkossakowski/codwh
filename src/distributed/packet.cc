@@ -14,6 +14,10 @@ NodePacket::NodePacket(vector<Column*> &view)
     row_size += global::getTypeSize(types[i]);
   }
 
+  if (view.empty()) {
+    return; // it is eof packet
+  }
+
   // compute maximum capacity
   capacity = MAX_PACKET_SIZE / row_size;
 
@@ -24,7 +28,8 @@ NodePacket::NodePacket(vector<Column*> &view)
 
 /** Tries to consume a view. If it's too much data - returns false. */
 void NodePacket::consume(vector<Column*> view){
-  if (readyToSend) assert(false); // should check if it's full before calling!
+  assert(!readyToSend); // should check if it's full before calling!
+  assert(!isEOF());
 
   for (uint32_t i = 0; i < view.size(); i++)
     offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);

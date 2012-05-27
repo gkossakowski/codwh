@@ -60,6 +60,14 @@ int WorkerNode::execPlan(query::Operation *op) {
         communication.outputBuffer.output[i].back()->readyToSend = true;
         communication.outputBuffer.full_packets++;
       }
+
+      // add eof
+      communication.debugPrint("[QUEUE] Add eof");
+      vector<Column*> noColumns;
+      communication.outputBuffer.output[i].push(new NodePacket(noColumns));
+      communication.outputBuffer.output[i].back()->readyToSend = true;
+      communication.outputBuffer.full_packets++;
+
       communication.outputBuffer.flushBucket(i);
     }
 
@@ -68,7 +76,6 @@ int WorkerNode::execPlan(query::Operation *op) {
       communication.getRequest();
       communication.outputBuffer.parseRequests();
     }
-    communication.outputBuffer.sendEof(); // confirm end of data stream
   }
 
   delete operation;
@@ -82,11 +89,14 @@ void WorkerNode::run() {
     query::NetworkMessage::Stripe *st;
     st = communication.jobs.front();
     stripe = st->stripe();
+    if (communication.delayed_requests.find(stripe) !=
+        communication.delayed_requests.end()) {
+      communication.requests = communication.delayed_requests[stripe];
+      communication.delayed_requests.erase(stripe);
+    }
     execPlan(st->mutable_operation());
     communication.jobs.pop();
     assert(communication.requests.empty()); // no pending request after we finish the stripe
-    communication.requests = communication.delayed_requests[stripe];
-    communication.delayed_requests.erase(stripe);
   };
   return ;
 }
