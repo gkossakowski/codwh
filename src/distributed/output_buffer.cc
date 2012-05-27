@@ -17,6 +17,13 @@ void OutputBuffer::resetOutput(int buckets) {
 }
 
 void OutputBuffer::parseRequests() {
+  /* Parses all received requests.
+   *
+   * Tries to satisfy requests for any bucket from current stripe
+   * by incrementing corresponding `pending_requests` counter and
+   * flushing the bucket. It doesn't check if data is ready for
+   * bucket - `flushBucket()` check it.
+   */
   communication->debugPrint("parseRequests...");
   int bucket;
   int provider_stripe;
@@ -56,8 +63,23 @@ void OutputBuffer::parseRequests() {
 }
 
 void OutputBuffer::packData(vector<Column*> &data, int bucket) {
+  /* Packs a given data into a given bucket. Then, parses *ALL* incoming
+   * requests and tries to satisfy them. Finally, tries to flush the
+   * given bucket.
+   *
+   * We're parsing all incoming requests, because they may correspond to
+   * data that has been already produced in past, when we haven't had request
+   * for them yet. On the other hand, we may parse a request while having no
+   * data, so we maintain `pending_requests` counters, which will be used
+   * to satisfy consumer in the future.
+   *
+   * Finally, we're trying to flush the givent bucket, because we've just
+   * produced a data for it, so it's possible that we're able to satisfy
+   * a request from the past.
+   */
   queue<NodePacket*> &buck = output[bucket];
 
+  communication->debugPrint("packData(%d)", bucket);
   if (buck.size() == 0 || buck.back()->readyToSend)
     buck.push(new NodePacket(data));
   buck.back()->consume(data);
@@ -85,12 +107,22 @@ void OutputBuffer::packData(vector<Column*> &data, int bucket) {
 }
 
 void OutputBuffer::flushBucket(int bucket) {
+  /* Tries to flush a given bucket. Does nothing, when no requests or data
+   * is available. It does not assume anything about the bucket state.
+   *
+   * The situation when we have request and no data to serve occures during
+   * the `parseRequests()` call.
+   */
   communication->debugPrint("flushBucket(%d)", bucket);
   if (pending_requests[bucket] == 0) {
     communication->debugPrint("flushBucket: no pending request for bucket");
     return;
   }
-  assert(!output[bucket].empty());
+  if (output[bucket].empty()) {
+    communication->debugPrint("flushBucket: data not ready yet");
+    return ;
+  }
+
   if (!output[bucket].front()->readyToSend) {
     communication->debugPrint("flushBucket: packet not ready to send for bucket");
     return;
