@@ -7,22 +7,26 @@
 #include "scheduler.h"
 
 /*
- * Cuts query into stripes.
+ * Cuts query into fragments.
  *
- * Each stripe is created whenever there's group by operation
+ * Each fragment is created whenever there's group by operation
  * encountered in query tree.
  *
- * Each stripe (apart from the first and the last ones) has union
+ * Each fragment (apart from the first and the last ones) has union
  * operation as a source and shuffle operation as a sink.
- * Two consecutive stripes should have column fields matching in
+ * Two consecutive fragments should have column fields matching in
  * shuffle and union operations (so they can be plugged together).
  *
  * When Shuffle and Union operations are introduced their fields
  * respectively `receiversCount` and `source` are left uninitialized.
  * It's job of the other part of the scheduler to initialize them.
+ *
+ * Once fragments are replicated enough times (e.g. first fragment
+ * is replicated `n` times where `n` is number of input files) then
+ * they become stripes.
  */
-vector<query::Operation> stripeOperation(const query::Operation query) {
-  vector<query::Operation> stripes;
+vector<query::Operation> fragmentOperation(const query::Operation query) {
+  vector<query::Operation> fragmnets;
   query::Operation op = query;
   if (query.has_scan()) {
     query::Operation scanOwnOp;
@@ -43,25 +47,25 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
           assert(false);
       }
     }
-    stripes.push_back(scanOwnOp);
+    fragmnets.push_back(scanOwnOp);
   } else if (query.has_compute()) {
-    stripes = stripeOperation(query.compute().source());
-    query::Operation lastStripe = stripes.back();
-    stripes.pop_back();
+    fragmnets = fragmentOperation(query.compute().source());
+    query::Operation lastFragment = fragmnets.back();
+    fragmnets.pop_back();
     op.mutable_compute()->clear_source();
-    op.mutable_compute()->mutable_source()->MergeFrom(lastStripe);
-    stripes.push_back(op);
+    op.mutable_compute()->mutable_source()->MergeFrom(lastFragment);
+    fragmnets.push_back(op);
   } else if (query.has_filter()) {
-    stripes = stripeOperation(query.filter().source());
-    query::Operation lastStripe = stripes.back();
-    stripes.pop_back();
+    fragmnets = fragmentOperation(query.filter().source());
+    query::Operation lastFragment = fragmnets.back();
+    fragmnets.pop_back();
     op.mutable_filter()->clear_source();
-    op.mutable_filter()->mutable_source()->MergeFrom(lastStripe);
-    stripes.push_back(op);
+    op.mutable_filter()->mutable_source()->MergeFrom(lastFragment);
+    fragmnets.push_back(op);
   } else if (query.has_group_by()) {
-    stripes = stripeOperation(query.group_by().source());
-    query::Operation lastStripe = stripes.back();
-    stripes.pop_back();
+    fragmnets = fragmentOperation(query.group_by().source());
+    query::Operation lastFragment = fragmnets.back();
+    fragmnets.pop_back();
     
     query::GroupByOperation groupBy = query.group_by();
     
@@ -79,7 +83,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     }
     
     query::Operation shuffle;
-    shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastStripe);
+    shuffle.mutable_shuffle()->mutable_source()->MergeFrom(lastFragment);
     for (unsigned int i=0; i < columns.size(); i++) {
       shuffle.mutable_shuffle()->add_column(columns[i]);
       shuffle.mutable_shuffle()->add_type(types[columns[i]]);
@@ -87,7 +91,7 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     for (unsigned int i = 0 ; i < keyColumns.size(); i++) {
       shuffle.mutable_shuffle()->add_hash_column(keyColumns[i]);
     }
-    stripes.push_back(shuffle);
+    fragmnets.push_back(shuffle);
     
     groupBy.clear_source();
     query::UnionOperation* union_ = groupBy.mutable_source()->mutable_union_();
@@ -98,12 +102,12 @@ vector<query::Operation> stripeOperation(const query::Operation query) {
     
     query::Operation groupByOp;
     groupByOp.mutable_group_by()->MergeFrom(groupBy);
-    stripes.push_back(groupByOp);
+    fragmnets.push_back(groupByOp);
   } else if (query.has_scan_file() || query.has_union_() || query.has_shuffle() || query.has_final()) {
-    // this should never happen as those nodes are introduced by stripeOperation
+    // this should never happen as those nodes are introduced by fragmentOperation
     assert(false);
   }
-  return stripes;
+  return fragmnets;
 }
 
 vector<query::ColumnType> getColumnTypes(const query::Operation& opProto) {
@@ -120,36 +124,36 @@ void addColumnsAndTypesToShuffle(query::ShuffleOperation& shuffle) {
   }
 }
 
-vector<query::Operation>* SchedulerNode::makeStripes(query::Operation query) {
-  vector<query::Operation> stripes = stripeOperation(query);
-  // add shuffle to the last but one stripe
+vector<query::Operation>* SchedulerNode::makeFragments(query::Operation query) {
+  vector<query::Operation> fragments = fragmentOperation(query);
+  // add shuffle to the last but one fragment
   {
     query::Operation shuffleOp;
-    query::Operation lastButOne = stripes.back();
-    stripes.pop_back();
+    query::Operation lastButOne = fragments.back();
+    fragments.pop_back();
     shuffleOp.mutable_shuffle()->mutable_source()->MergeFrom(lastButOne);
     addColumnsAndTypesToShuffle(*shuffleOp.mutable_shuffle());
-    stripes.push_back(shuffleOp);
+    fragments.push_back(shuffleOp);
   }
-  // add the last stripe that is just union and final operation
+  // add the last fragment that is just union and final operation
   {
     query::Operation finalOp;
     query::UnionOperation& unionOp = *finalOp.mutable_final()->mutable_source()->mutable_union_();
-    query::Operation& lastButOne = stripes.back();
+    query::Operation& lastButOne = fragments.back();
     assert(lastButOne.has_shuffle());
     for (int i = 0; i < lastButOne.shuffle().column_size(); i++) {
       unionOp.add_column(lastButOne.shuffle().column(i));
       unionOp.add_type(lastButOne.shuffle().type(i));
     }
-    stripes.push_back(finalOp);
+    fragments.push_back(finalOp);
   }
-  vector<query::Operation> *stripes_ptr = new vector<query::Operation>(stripes.begin(), stripes.end());
-  return stripes_ptr;
+  vector<query::Operation> *fragments_ptr = new vector<query::Operation>(fragments.begin(), fragments.end());
+  return fragments_ptr;
 }
 
 /*
  * Assigns nodes to union operation that is stored in a given stripe. This
- * method should not be called with first stripe that has no union operations.
+ * method should not be called with a stripe from the first fragment that has no union operations.
  *
  * Nodes are specified as a range [nodeStart, nodeEnd).
  *
@@ -205,7 +209,7 @@ int extractInputFilesNumber(const query::Operation& query) {
     return extractInputFilesNumber(query.shuffle().source());
   } else if (query.has_union_()) {
     // if query has union as its source then it means we cannot extract number
-    // of files (probably the wrong stripe has been passed)
+    // of files (probably a wrong stripe from the wrong framgnet has been passed)
     assert(false);
   } else if (query.has_final()) {
     return extractInputFilesNumber(query.final().source());
@@ -217,7 +221,7 @@ int extractInputFilesNumber(const query::Operation& query) {
 
 /*
  * Assigns file to ScanFileOperation. This method should be called with
- * the first stripe only.
+ * stripes from the first fragment only.
  *
  * This method mutates passed stripe.
  */
@@ -236,7 +240,7 @@ void assignFileToScan(query::Operation& stripe, int fileToScan) {
   } else if (stripe.has_shuffle()) {
     assignFileToScan(*stripe.mutable_shuffle()->mutable_source(), fileToScan);
   } else if (stripe.has_union_()) {
-    // union is the source, probably the wrong stripe passed
+    // union is the source, probably a stripe from the wrong fragment passed
     assert(false);
   } else if (stripe.has_final()) {
     assignFileToScan(*stripe.mutable_final()->mutable_source(), fileToScan);
@@ -274,7 +278,21 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   
   vector< std::pair<int, int> > previousStripeIds;
   int stripeId = 0;
-  // process the first stripe
+  /* Stripes from the previous query fragment compared to
+   * what we process at the moment. We store those stripes
+   * because only once next fragment is processed we can
+   * correctly assign receivers counts in the previous stripe.
+   *
+   * The sequence is like that:
+   * a) we process the current fragment and we add all stripes
+   *    to the previousStripes vector with receivers counts
+   *     in all stripes uninitialized
+   * b) we process the next fragment; once done we set receivers
+   *    counts in previous stripes and only then we send complete
+   *    jobs to workers
+   */
+  vector<query::Operation> previousStripes;
+  // process the first fragment
   {
     query::Operation& firstStripe = stripes->front();
     // TODO: special hack for case of only two stripes, I need to refactor this
@@ -288,16 +306,17 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
       query::Operation stripeForFile = firstStripe; // make copy
       assignFileToScan(stripeForFile, i);
       int nodeId = nodeIds[i%nodeIds.size()];
-      sendJob(stripeForFile, nodeId, stripeId);
+      previousStripes.push_back(stripeForFile);
       previousStripeIds.push_back(std::make_pair(nodeId, stripeId));
       stripeId++;
     }
   }
   std::swap(nodeIds, nodeIdsNext);
-  // process inner stripes
+  // process inner fragments
   for (unsigned i = 1; i + 1 < stripes->size(); i++) {
     query::Operation& stripe = (*stripes)[i];
     vector< std::pair<int, int> > stripeIds;
+    vector<query::Operation> currentStripes;
     // assign to union nodes and stripes that were
     // sent in the previous iteration
     assignNodesToUnion(stripe, previousStripeIds);
@@ -306,15 +325,26 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
       int nodeId = nodeIds[j%nodeIds.size()];
       // make local copy of stripe because sendJob destroys its input data
       query::Operation localStripe = stripe;
-      sendJob(localStripe, nodeId, stripeId);
+      currentStripes.push_back(localStripe);
       stripeIds.push_back(std::make_pair(nodeId, stripeId));
       stripeId++;
     }
+    for (unsigned j = 0; j < previousStripes.size(); j++) {
+      query::Operation& previousStripe = previousStripes[j];
+      assignReceiversCount(previousStripe, currentStripes.size());
+      sendJob(previousStripe, previousStripeIds[j].first, previousStripeIds[j].second);
+    }
     previousStripeIds = stripeIds;
+    previousStripes = currentStripes;
     std::swap(nodeIds, nodeIdsNext);
   }
-  // schedule the last stripe, use all the remaining workers
+  // schedule the last fragment, use worker[1]
   {
+    for (unsigned j = 0; j < previousStripes.size(); j++) {
+      query::Operation& previousStripe = previousStripes[j];
+      assignReceiversCount(previousStripe, 1);
+      sendJob(previousStripe, previousStripeIds[j].first, previousStripeIds[j].second);
+    }
     query::Operation lastStripe = stripes->back();
     assignNodesToUnion(lastStripe, previousStripeIds);
     sendJob(lastStripe, 1, stripeId);
@@ -352,16 +382,16 @@ void SchedulerNode::run(const query::Operation &op) {
   std::cout << "Scheduling proto: " << op.DebugString() << "\n";
   int numberOfInputFiles = extractInputFilesNumber(op);
   printf("number of input files: %d\n", numberOfInputFiles);
-  vector<query::Operation> *stripes = makeStripes(op);
-  std::cout << "after striping: " << std::endl;
-  for (unsigned i=0; i < stripes->size() ; i++) {
-    std::cout << "STRIPE " << i << std::endl;
-    std::cout << (*stripes)[i].DebugString() << std::endl;
+  vector<query::Operation> *fragments = makeFragments(op);
+  std::cout << "after cutting the query into fragments: " << std::endl;
+  for (unsigned i=0; i < fragments->size() ; i++) {
+    std::cout << "FRAGMENT " << i << std::endl;
+    std::cout << (*fragments)[i].DebugString() << std::endl;
   }
   // node[0]: scheduler, node[1]: final operation
-  schedule(stripes, communication.nei->nodes_count(), numberOfInputFiles);
+  schedule(fragments, communication.nei->nodes_count(), numberOfInputFiles);
   flushJobs();
-  delete stripes;
+  delete fragments;
   
   // TODO : switch to a worker mode
   // execPlan(finalOperation);
