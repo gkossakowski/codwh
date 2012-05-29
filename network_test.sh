@@ -28,7 +28,11 @@ PIDS=""
 for i in `seq 1 $MAX_NUMBER`; do
    PORT=`expr $START_PORT + $i`
   echo "RUNNING:./src/worker $i $QUERY_NUM $PORT $HOSTS &"
+  if [ $i -eq 1 ] ; then
+  ./src/worker $i $PORT $QUERY_NUM $HOSTS &> "logs/`printf \"%03d\" $i`" 3> "logs/results" & # we will remove query um later
+  else
   ./src/worker $i $PORT $QUERY_NUM $HOSTS &> "logs/`printf \"%03d\" $i`" & # we will remove query um later
+  fi
   PIDS="$PIDS $!"
 done
 
@@ -43,6 +47,10 @@ sleep 2
 cat `find ./logs -type f | sort`
 
 killall worker
+
+sort logs/results > logs/results_sorted
+rm logs/results
+
 for job in `jobs -p`; do
     wait $job
 done

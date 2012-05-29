@@ -19,7 +19,9 @@ using ::std::string;
 using ::std::cout;
 
 //#define dprintf(...)
-#define dprintf printf
+//#define dprintf printf
+// dprintf already exists - it prints to the given descriptor
+const int RESULTS_FD = 3;
 
 namespace {
 
@@ -101,7 +103,7 @@ class RealDataServer : public Server {
   int GetByteBools(int column_index, int number, bool* destination);
   int GetBitBools(int column_index, int number, char* destination);
 
-  // The Consume methods dprintf the output to screen. This is useful for
+  // The Consume methods printf the output to screen. This is useful for
   // correctness checking, for running benchmarks you should likely redefine
   // them to do nothing.
   void ConsumeDoubles(int column_index, int number, const double* destination);
@@ -128,7 +130,9 @@ class DoubleColumnServer : public ColumnServer {
   }
 
   int GetDoubles(int number, double *destination) {
-    dprintf("SERVING %d to %d, zoom %d, normalcy %s\n",
+    printf("SERVING %d to %d, zoom %d, normalcy %s\n",
+           low_range_, high_range_, zoom_range_, normal_ ? "TRUE" : "FALSE");
+    dprintf(RESULTS_FD, "SERVING %d to %d, zoom %d, normalcy %s\n",
            low_range_, high_range_, zoom_range_, normal_ ? "TRUE" : "FALSE");
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
@@ -169,7 +173,9 @@ class IntColumnServer : public ColumnServer {
   }
 
   int GetInts(int number, int *destination) {
-    dprintf("SERVING %d to %d, normalcy %s\n",
+    printf("SERVING %d to %d, normalcy %s\n",
+           low_range_, high_range_, normal_ ? "TRUE" : "FALSE");
+    dprintf(RESULTS_FD, "SERVING %d to %d, normalcy %s\n",
            low_range_, high_range_, normal_ ? "TRUE" : "FALSE");
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
@@ -205,7 +211,7 @@ class BoolColumnServer : public ColumnServer {
   }
 
   int GetByteBools(int number, bool *destination) {
-    dprintf("SERVING probability %d\n", probability_);
+    printf("SERVING probability %d\n", probability_);
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
       destination[i] = Generate();
@@ -214,7 +220,7 @@ class BoolColumnServer : public ColumnServer {
   }
 
   virtual int GetBitBools(int number, char* destination) {
-    dprintf("SERVING probability %d\n", probability_);
+    printf("SERVING probability %d\n", probability_);
     number = Serve(number);
     for (int i = 0; i < number; ++i) {
       destination[i / 8] |= (Generate() << (i & 7));
@@ -274,20 +280,23 @@ int RealDataServer::GetBitBools(int c, int n, char* d) {
 void RealDataServer::ConsumeDoubles(int column_index, int number,
                                   const double* d) {
   for (int i = 0; i < number; ++i) {
-    dprintf("C%d: %f\n", column_index, d[i]);
+    printf("C%d: %f\n", column_index, d[i]);
+    dprintf(RESULTS_FD, "C%d: %f\n", column_index, d[i]);
   }
 }
 
 void RealDataServer::ConsumeInts(int column_index, int number, const int32* d) {
   for (int i = 0; i < number; ++i) {
-    dprintf("C%d: %d\n", column_index, d[i]);
+    printf("C%d: %d\n", column_index, d[i]);
+    dprintf(RESULTS_FD, "C%d: %d\n", column_index, d[i]);
   }
 }
 
 void RealDataServer::ConsumeByteBools(int column_index, int number,
                                     const bool* d) {
   for (int i = 0; i < number; ++i) {
-    dprintf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
+    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
+    dprintf(RESULTS_FD, "C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
   }
 }
 
@@ -300,7 +309,8 @@ void RealDataServer::ConsumeBitBools(int column_index, int number,
       mask = 1;
       pos += 1;
     }
-    dprintf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
+    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
+    dprintf(RESULTS_FD, "C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
     mask <<= 1;
   }
 }
