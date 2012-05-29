@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Wait for pidfile
-while [! -f $1 ]; do
+while [ ! -f $1 ]; do
     sleep 0.1
 done
 PID=`cat $1`
