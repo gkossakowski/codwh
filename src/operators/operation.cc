@@ -71,7 +71,7 @@ ScanFileOperation::ScanFileOperation(const query::ScanFileOperation& oper) {
   int n = oper.column_size();
   cache = vector<Column*>(n);
   source = global::worker->communication.openSourceInterface(oper.source());
-  providers = vector<ColumnProvider*>(n);
+  providers = vector<ColumnProvider*>(n, NULL);
 
   for (int i = 0 ; i < n ; ++i) {
     providers[i] = Factory::createFileColumnProvider(source,

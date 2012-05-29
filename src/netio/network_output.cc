@@ -33,7 +33,8 @@ bool NetworkOutput::EnsureConnectionExists() {
     while (error && endpoint_iterator != end)
     {
       socket_.close();
-      socket_.connect(*endpoint_iterator++, error);
+      socket_.connect(*endpoint_iterator, error);
+      endpoint_iterator++;
     }
     if (error) {
       LOG3("%s:%s, Cannot connect: %s", host_.c_str(), service_.c_str(),

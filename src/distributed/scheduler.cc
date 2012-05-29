@@ -113,6 +113,7 @@ vector<query::Operation> fragmentOperation(const query::Operation query) {
 vector<query::ColumnType> getColumnTypes(const query::Operation& opProto) {
   Operation* op = Factory::createOperation(opProto);
   vector<query::ColumnType> result = op->getTypes();
+  delete op;
   return result;
 }
 
