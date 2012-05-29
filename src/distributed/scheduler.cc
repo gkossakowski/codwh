@@ -1,4 +1,5 @@
 #include <queue>
+#include <iostream>
 
 #include "proto/operations.pb.h"
 #include "node_environment/node_environment.h"
@@ -215,6 +216,7 @@ int extractInputFilesNumber(const query::Operation& query) {
     return extractInputFilesNumber(query.final().source());
   } else {
     // unknown case
+    std::cout << "ERROR: unknown operation: " << query.DebugString() << std::endl;
     assert(false);
   }
 }
