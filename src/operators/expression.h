@@ -18,6 +18,7 @@ class Expression : public Node {
  public:
   virtual Column* pull(vector<Column*>* sources) = 0;
   virtual query::ColumnType getType() = 0;
+  virtual ~Expression() {};
 };
 
 template<class T>
@@ -45,6 +46,9 @@ class Expression1 : public Expression {
   std::ostream& debugPrint(std::ostream& output) {
     return output << getName() << "(" << *left << ")";
   }
+  virtual ~Expression1() {
+    delete left;
+  };
 };
 
 template<class T>
@@ -76,6 +80,10 @@ class Expression2 : public Expression {
     output << " " << getSymbol() << " ";
     return output << *right << ")";
   }
+  virtual ~Expression2() {
+    delete left;
+    delete right;
+  };
 };
 
 template<class T>
@@ -514,6 +522,8 @@ class ExpressionLogic : public Expression {
   query::ColumnType getType() {
     return global::getType<char>();
   }
+
+  virtual ~ExpressionLogic() {};
 };
 
 template<class TL, class TR>
