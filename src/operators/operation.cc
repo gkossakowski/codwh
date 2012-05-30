@@ -307,6 +307,7 @@ ShuffleOperation::~ShuffleOperation() {
 UnionOperation::UnionOperation(const query::UnionOperation& oper) {
   assert(oper.column_size() == oper.type_size());
 
+  tmp = NULL;
   firstPull = true;
   finished = 0;
 
@@ -354,7 +355,7 @@ vector<Column*>* UnionOperation::pull() {
 
   // preparing new data
   query::DataResponse* dataResponse;
-  while (cache.size() == 0) {
+  while (cache.size() == 0 && finished != sourcesNode.size()) {
     global::worker->communication.getResponse();
     dataResponse = global::worker->communication.responses.front();
     global::worker->communication.responses.pop();
@@ -371,19 +372,38 @@ vector<Column*>* UnionOperation::pull() {
           dataResponse->node(), dataResponse->stripe());
       finished++; // got EOF
     }
+  }
 
-    if (finished == sourcesNode.size()){
-      printf("Union consumed all data\n");
-      return &eof;
-    }
+  if (cache.size() == 0){
+    assert(finished == sourcesNode.size());
+    printf("Union consumed all data\n");
+    return &eof;
   }
 
   printf("collected the whole chunk in UnionOperation:pull, returning\n");
   // ask cache
-  vector<Column*> *data = cache.front();
+  if (tmp != NULL) {
+    deleteChunkData(tmp);
+    delete tmp;
+  }
+  tmp = cache.front();
   cache.pop();
-  return data;
-  // TODO: chunk deallocation
+  return tmp;
+}
+
+void UnionOperation::deleteChunkData(vector<Column *>* chunk) {
+  printf("UnionOperation::deleteChunkData...\n");
+  for (uint32_t i = 0; i < chunk->size(); i++)
+    delete (*chunk)[i];
+}
+
+UnionOperation::~UnionOperation() {
+  printf("UnionOperation::~UnionOperation...\n");
+  deleteChunkData(&eof);
+  if (tmp != NULL) {
+    deleteChunkData(tmp);
+    delete tmp;
+  }
 }
 
 void UnionOperation::processReceivedData(query::DataResponse *response) {

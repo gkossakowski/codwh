@@ -122,14 +122,17 @@ class UnionOperation : public Operation {
   uint32_t finished;
   vector<query::ColumnType> types;
   std::queue<vector<Column*>*> cache;
+  vector<Column*>* tmp;
   bool firstPull;
   void processReceivedData(query::DataResponse *response);
   vector<Column*> eof;
+  void deleteChunkData(vector<Column*>* chunk);
  public:
   UnionOperation(const query::UnionOperation& oper);
   vector<Column*>* pull();
   std::ostream& debugPrint(std::ostream& output);
   vector<query::ColumnType> getTypes();
+  ~UnionOperation();
 };
 
 class FinalOperation : public Operation {
