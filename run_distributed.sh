@@ -23,20 +23,24 @@ SCHED_PARAMS="$1 $2 0"
 WORK_CMD="./codwh/src/worker"
 MONITOR_CMD="./codwh/monitor.sh"
 
-HOSTS="$SCHED_HOST:$INIT_PORT"
+#HOSTS="$SCHED_HOST:$INIT_PORT"
 WORKER_PORT=$((INIT_PORT + 1))
 for worker in $WORK_HOSTS; do
     HOSTS="$HOSTS $worker:$WORKER_PORT"
     WORKER_PORT=$(( WORKER_PORT + 1 ))
 done
 
+for worker in $WORK_HOSTS; do
+    $SSH $USER@$worker$DOMAIN "killall worker || echo $worker ready."
+done
+
 i=1
 WORKER_PORT=$((INIT_PORT + 1))
 for worker in $WORK_HOSTS; do
     echo Running worker $WORKER_PORT
-    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $HOSTS 2>&1 > worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
+    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $SCHED_HOST:$INIT_PORT $HOSTS &>worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
-    $SSH $USER@$worker$DOMAIN bash -c "\"$MONITOR_CMD worker_$((WORKER_PORT))_pid 2>&1 > monitor_$(($WORKER_PORT))_log & echo \\\$! > monitor_$(($WORKER_PORT))_pid\"" &
+    $SSH $USER@$worker$DOMAIN bash -c "\"$MONITOR_CMD worker_$((WORKER_PORT))_pid >monitor_$(($WORKER_PORT))_log & echo \\\$! > monitor_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
     i=$(( i + 1 ))
     WORKER_PORT=$(( WORKER_PORT + 1 ))
@@ -74,7 +78,11 @@ for pid in $SSH_PIDS; do
     wait $pid
 done
 
-echo "set multiplot layout $((i - 1)),1" > gnuplotcmd
+echo "set terminal png size 1024,2048" > gnuplotcmd
+echo "set output \"system_params.png\"" >> gnuplotcmd
+echo "DX=1.00; DY=1.00; SX=3; SY=3" >> gnuplotcmd
+echo "set bmargin DX; set tmargin DX; set lmargin DY; set rmargin DY" >> gnuplotcmd
+echo "set multiplot layout $((i - 1)),1" >> gnuplotcmd
 #echo "plot \"monitor_15000_log\" using 1:5 with lines, \"monitor_15000_log\" using 1:(\$6/1024) with lines axes x1y2" >> gnuplotcmd
 echo "set tics font \",5\"" >> gnuplotcmd
 echo "set format x \"%X\"" >> gnuplotcmd
