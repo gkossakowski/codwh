@@ -33,6 +33,7 @@ class Operation : public Node {
   }
   /** consume output at server */
   virtual int consume();
+  virtual ~Operation() {};
 };
 
 class ScanOperation : public Operation {

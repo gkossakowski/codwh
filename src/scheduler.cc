@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
   query::Operation query;
   TextFormat::Parse(&queryFile, &query);
   queryFile.Close();
+  close(queryFd);
 
   /** Set up network environment */
   boost::scoped_ptr<NodeEnvironmentInterface> nei(
