@@ -18,7 +18,7 @@ class Expression : public Node {
  public:
   virtual Column* pull(vector<Column*>* sources) = 0;
   virtual query::ColumnType getType() = 0;
-  virtual ~Expression() {};
+  virtual ~Expression() { };
 };
 
 template<class T>
@@ -103,6 +103,7 @@ class ExpressionColumn : public Expression {
   query::ColumnType getType() {
     return global::getType<T>();
   }
+  virtual ~ExpressionColumn() { };
 };
 
 template<class T>
@@ -143,6 +144,8 @@ class ExpressionConstant : public Expression {
   query::ColumnType getType() {
     return global::getType<T>();
   }
+
+  virtual ~ExpressionConstant() { };
 };
 
 // Add {{{
@@ -152,6 +155,8 @@ class ExpressionAdd : public Expression2<T> {
   ExpressionAdd(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
   void pullInternal(Column* a, Column* b);
+
+  virtual ~ExpressionAdd() { };
 };
 
 template<>
@@ -210,6 +215,8 @@ class ExpressionMinus : public Expression2<T> {
   ExpressionMinus(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
   void pullInternal(Column* a, Column* b);
+
+  virtual ~ExpressionMinus() { };
 };
 
 template<>
@@ -268,6 +275,8 @@ class ExpressionMultiply : public Expression2<T> {
   ExpressionMultiply(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
   void pullInternal(Column* a, Column* b);
+
+  virtual ~ExpressionMultiply() { };
 };
 
 template<>
@@ -326,6 +335,8 @@ class ExpressionDivide : public Expression2<T> {
   ExpressionDivide(Expression* l, Expression* r): Expression2<T>(l, r) { }
 
   void pullInternal(Column* a, Column* b);
+
+  virtual ~ExpressionDivide() { };
 };
 
 template<>
@@ -393,6 +404,8 @@ class ExpressionOr : public Expression2<char> {
       target[i] = aT[i] | bT[i];
     }
   }
+
+  virtual ~ExpressionOr() { };
 };
 
 class ExpressionAnd : public Expression2<char> {
@@ -409,6 +422,8 @@ class ExpressionAnd : public Expression2<char> {
       target[i] = aT[i] & bT[i];
     }
   }
+
+  virtual ~ExpressionAnd() { };
 };
 
 class ExpressionNot : public Expression1<char> {
@@ -423,6 +438,8 @@ class ExpressionNot : public Expression1<char> {
       target[i] = ~aT[i];
     }
   }
+
+  virtual ~ExpressionNot() { };
 };
 // }}}
 
@@ -454,6 +471,10 @@ class ExpressionLog : public Expression {
   query::ColumnType getType() {
     return global::getType<double>();
   }
+
+  virtual ~ExpressionLog() {
+    delete left;
+  }
 };
 // }}}
 
@@ -463,6 +484,7 @@ class ExpressionNegate : public Expression1<T> {
  public:
   ExpressionNegate(Expression* l): Expression1<T>(l) { }
   void pullInternal(Column* a);
+  virtual ~ExpressionNegate() { };
 };
 
 template<>
@@ -523,7 +545,10 @@ class ExpressionLogic : public Expression {
     return global::getType<char>();
   }
 
-  virtual ~ExpressionLogic() {};
+  virtual ~ExpressionLogic() {
+    delete left;
+    delete right;
+  };
 };
 
 template<class TL, class TR>
@@ -542,6 +567,8 @@ class ExpressionLower : public ExpressionLogic<TL, TR> {
  public:
   ExpressionLower(Expression* l, Expression* r):
     ExpressionLogic<TL, TR>(l, r) { }
+
+  virtual ~ExpressionLower() { };
 };
 
 template<class TL, class TR>
@@ -560,6 +587,8 @@ class ExpressionEqual : public ExpressionLogic<TL, TR> {
  public:
   ExpressionEqual(Expression* l, Expression* r):
     ExpressionLogic<TL, TR>(l, r) { }
+
+  virtual ~ExpressionEqual() { }
 };
 
 template<>
@@ -587,6 +616,7 @@ class ExpressionNotEqual : public ExpressionLogic<TL, TR> {
  public:
   ExpressionNotEqual(Expression* l, Expression* r):
     ExpressionLogic<TL, TR>(l, r) { }
+  virtual ~ExpressionNotEqual() { };
 };
 
 template<>
@@ -610,6 +640,7 @@ class ExpressionIf : public Expression {
  public:
   ExpressionIf(Expression* cond, Expression* l, Expression* r):
     condition(cond), left(l), right(r) { }
+
   Column* pull(vector<Column*>* sources) {
     Column* cond = condition->pull(sources);
     unsigned char* cT = (unsigned char*) static_cast<ColumnChunk<char>*>(cond)->chunk;
@@ -679,6 +710,14 @@ has_true_and_false:
   query::ColumnType getType() {
     return global::getType<T>();
   }
+
+
+  virtual ~ExpressionIf() {
+    delete condition;
+    delete left;
+    delete right;
+  }
+ 
 };
 // }}}
 
