@@ -281,10 +281,10 @@ inline ColumnChunk<T>*
 deserializeChunk(int from_row, const char bytes[], size_t rows) {
   printf("deserializeChunk...\n");
   ColumnChunk<T> *col = new ColumnChunk<T>();
-  size_t type_size = global::getTypeSize(col->getType());
-  size_t from_byte = from_row * type_size;
+  const T* values = reinterpret_cast<const T*>(bytes);
+  assert(rows <= DEFAULT_CHUNK_SIZE);
+  std::copy(values + from_row, values + from_row + rows, col->chunk);
   col->size = rows;
-  std::copy(bytes + from_byte, bytes + from_byte + rows * type_size, col->chunk);
   return col;
 }
 
