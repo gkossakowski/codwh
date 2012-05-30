@@ -49,6 +49,7 @@ class ScanOperation : public Operation {
 class ScanFileOperation : public Operation {
   vector<ColumnProvider*> providers;
   DataSourceInterface* source;
+  int sourceFileId;
  public:
   ScanFileOperation(const query::ScanFileOperation& oper);
   vector<Column*>* pull();

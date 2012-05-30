@@ -53,7 +53,7 @@ Factory::createColumnProvider(int columnId, query::ColumnType type) {
 }
 
 ColumnProvider*
-Factory::createFileColumnProvider(DataSourceInterface* source,
+Factory::createFileColumnProvider(DataSourceInterface** source,
     int columnId, query::ColumnType type) {
   switch (type) {
     case query::INT:

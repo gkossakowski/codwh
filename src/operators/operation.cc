@@ -66,21 +66,26 @@ ScanOperation::~ScanOperation() {
 
 // }}}
 
-// ScanFileOperation {{{ 
+// ScanFileOperation {{{
 ScanFileOperation::ScanFileOperation(const query::ScanFileOperation& oper) {
   int n = oper.column_size();
   cache = vector<Column*>(n);
-  source = global::worker->communication.openSourceInterface(oper.source());
+  source = NULL;
+  sourceFileId = oper.source();
   providers = vector<ColumnProvider*>(n);
 
   for (int i = 0 ; i < n ; ++i) {
-    providers[i] = Factory::createFileColumnProvider(source,
+    providers[i] = Factory::createFileColumnProvider(&source,
         oper.column().Get(i), (query::ColumnType) oper.type().Get(i));
   }
 }
 
 vector<Column*>*
 ScanFileOperation::pull() {
+  if (source == NULL) {
+    source = global::worker->communication.openSourceInterface(sourceFileId);
+  }
+
   for (unsigned i = 0 ; i < providers.size() ; ++i) {
     cache[i] = providers[i]->pull();
   }

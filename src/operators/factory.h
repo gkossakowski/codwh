@@ -23,7 +23,7 @@ class Factory {
   static Server* server;
   static Operation* createOperation(const query::Operation& operation);
   static ColumnProvider* createColumnProvider(int columnId, query::ColumnType type);
-  static ColumnProvider* createFileColumnProvider(DataSourceInterface* source,
+  static ColumnProvider* createFileColumnProvider(DataSourceInterface** source,
       int columnId, query::ColumnType type);
   static Column* createColumnFromType(query::ColumnType type);
   static Expression* createExpression(

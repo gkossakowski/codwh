@@ -282,7 +282,7 @@ deserializeChunk(int from_row, const char bytes[], size_t rows) {
   printf("deserializeChunk...\n");
   ColumnChunk<T> *col = new ColumnChunk<T>();
   const T* values = reinterpret_cast<const T*>(bytes);
-  assert(rows <= DEFAULT_CHUNK_SIZE);
+  assert(rows <= (size_t) DEFAULT_CHUNK_SIZE);
   std::copy(values + from_row, values + from_row + rows, col->chunk);
   col->size = rows;
   return col;
@@ -292,10 +292,10 @@ deserializeChunk(int from_row, const char bytes[], size_t rows) {
 template<class T>
 class ColumnProviderFile : public ColumnProvider {
   ColumnChunk<T> columnCache;
-  DataSourceInterface* source;
+  DataSourceInterface** source;
   int columnIndex;
  public:
-  ColumnProviderFile(DataSourceInterface* source_, int id):
+  ColumnProviderFile(DataSourceInterface** source_, int id):
     source(source_), columnIndex(id) {}
 
   inline Column* pull();
@@ -310,12 +310,11 @@ class ColumnProviderFile : public ColumnProvider {
   }
 };
 
-
 template<>
 inline Column*
 ColumnProviderFile<int>::pull() {
   columnCache.size =
-      source->GetInts(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
+      (*source)->GetInts(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
 }
 
@@ -323,7 +322,7 @@ template<>
 inline Column*
 ColumnProviderFile<double>::pull() {
   columnCache.size =
-      source->GetDoubles(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
+      (*source)->GetDoubles(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
 }
 
@@ -331,7 +330,7 @@ template<>
 inline Column*
 ColumnProviderFile<char>::pull() {
   columnCache.size =
-      source->GetBitBools(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
+      (*source)->GetBitBools(columnIndex, DEFAULT_CHUNK_SIZE, &columnCache.chunk[0]);
   return &columnCache;
 }
 // }}}
