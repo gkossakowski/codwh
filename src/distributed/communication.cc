@@ -4,16 +4,16 @@
 void Communication::debugPrint(const char* fmt, ...) {
   va_list ap;
   if (*stripe == -1) {
-    printf("Worker[%d:NONE]: ", nei->my_node_number());
+    //printf("Worker[%d:NONE]: ", nei->my_node_number());
   } else {
-    printf("Worker[%d:%d]: ", nei->my_node_number(), *stripe);
+    //printf("Worker[%d:%d]: ", nei->my_node_number(), *stripe);
   }
 
   va_start(ap, fmt);
-  vfprintf(stdout, fmt, ap);
+  //vfprintf(stdout, fmt, ap);
   va_end(ap);
 
-  printf("\n");
+  //printf("\n");
   fflush(stdout);
 }
 

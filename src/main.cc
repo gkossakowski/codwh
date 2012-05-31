@@ -74,14 +74,14 @@ int main(int args, char** argv) {
   Operation* operation = Factory::createOperation(rootOperation);
 
   if (vm.count("tree")) {
-    std::cout << "Query num " << queryNum;
+    /*std::cout << "Query num " << queryNum;
     std::cout << " filename " << queryFilename << "\n";
 
     std::cout << "Our query tree:\n" << *operation << "\n";
     std::cout << std::endl;
     std::cout << "Proto query tree:\n" << 
         rootOperation.DebugString() << "\n";
-
+*/
     return 0;
   } 
 

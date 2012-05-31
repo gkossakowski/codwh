@@ -18,10 +18,12 @@ using ::std::vector;
 using ::std::string;
 using ::std::cout;
 
-//#define dprintf(...)
+#define dprintf(...)
+#define printf(...)
 //#define dprintf printf
 // dprintf already exists - it prints to the given descriptor
 const int RESULTS_FD = 3;
+unsigned long long  ROW_COUNT = 0;
 
 namespace {
 
@@ -56,23 +58,23 @@ class ColumnServer {
   virtual ~ColumnServer() {};
 
   virtual int GetDoubles(int number, double* destination) {
-    cout << "ERROR: wrong server " << getName() << " is used\n";
+    //cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
 
   virtual int GetInts(int number, int32* destination) {
-    cout << "ERROR: wrong server " << getName() << " is used\n";
+    //cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
   virtual int GetByteBools(int number, bool* destination) {
-    cout << "ERROR: wrong server " << getName() << " is used\n";
+    //cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
   virtual int GetBitBools(int number, char* destination) {
-    cout << "ERROR: wrong server " << getName() << " is used\n";
+    //cout << "ERROR: wrong server " << getName() << " is used\n";
     assert(false);
     return -1;
   }
@@ -256,6 +258,7 @@ RealDataServer::RealDataServer(const vector<int> &column_types) {
 
 RealDataServer::~RealDataServer() {
   vector<ColumnServer *>::iterator it;
+  fprintf(stderr, "ROWS CONSUMED: %llu\n", ROW_COUNT);
   for (it = column_servers_.begin(); it != column_servers_.end(); ++it) {
     delete *it;
   }
@@ -283,6 +286,7 @@ void RealDataServer::ConsumeDoubles(int column_index, int number,
     printf("C%d: %f\n", column_index, d[i]);
     dprintf(RESULTS_FD, "C%d: %f\n", column_index, d[i]);
   }
+  if(column_index == 0) ROW_COUNT += number;
 }
 
 void RealDataServer::ConsumeInts(int column_index, int number, const int32* d) {
@@ -290,6 +294,7 @@ void RealDataServer::ConsumeInts(int column_index, int number, const int32* d) {
     printf("C%d: %d\n", column_index, d[i]);
     dprintf(RESULTS_FD, "C%d: %d\n", column_index, d[i]);
   }
+  if(column_index == 0) ROW_COUNT += number;
 }
 
 void RealDataServer::ConsumeByteBools(int column_index, int number,
@@ -298,6 +303,7 @@ void RealDataServer::ConsumeByteBools(int column_index, int number,
     printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
     dprintf(RESULTS_FD, "C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
   }
+  if(column_index == 0) ROW_COUNT += number;
 }
 
 void RealDataServer::ConsumeBitBools(int column_index, int number,
@@ -313,6 +319,7 @@ void RealDataServer::ConsumeBitBools(int column_index, int number,
     dprintf(RESULTS_FD, "C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
     mask <<= 1;
   }
+  if(column_index == 0) ROW_COUNT += number;
 }
 
 // Utilities for ColumnMap.

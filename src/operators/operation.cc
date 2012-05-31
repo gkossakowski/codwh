@@ -382,11 +382,11 @@ vector<Column*>* UnionOperation::pull() {
 
   if (cache.size() == 0){
     assert(finished == sourcesNode.size());
-    printf("Union consumed all data\n");
+    //printf("Union consumed all data\n");
     return &eof;
   }
 
-  printf("collected the whole chunk in UnionOperation:pull, returning\n");
+  //printf("collected the whole chunk in UnionOperation:pull, returning\n");
   // ask cache
   if (tmp != NULL) {
     deleteChunkData(tmp);
@@ -398,13 +398,13 @@ vector<Column*>* UnionOperation::pull() {
 }
 
 void UnionOperation::deleteChunkData(vector<Column *>* chunk) {
-  printf("UnionOperation::deleteChunkData...\n");
+  //printf("UnionOperation::deleteChunkData...\n");
   for (uint32_t i = 0; i < chunk->size(); i++)
     delete (*chunk)[i];
 }
 
 UnionOperation::~UnionOperation() {
-  printf("UnionOperation::~UnionOperation...\n");
+  //printf("UnionOperation::~UnionOperation...\n");
   deleteChunkData(&eof);
   if (tmp != NULL) {
     deleteChunkData(tmp);
@@ -413,13 +413,13 @@ UnionOperation::~UnionOperation() {
 }
 
 void UnionOperation::processReceivedData(query::DataResponse *response) {
-  printf("UnionOperation::processReceivedData...\n");
+  //printf("UnionOperation::processReceivedData...\n");
   int from_row = 0;
   assert(response->data().data(0).size() % global::getTypeSize(response->data().type(0)) == 0);
   int size = response->data().data(0).size() /
              global::getTypeSize(response->data().type(0));
   int chunk_size;
-  printf("size = %d\n", size);
+  //printf("size = %d\n", size);
 
   query::DataPacket *packet = response->mutable_data();
   vector<Column*> *chunk;
@@ -436,7 +436,7 @@ void UnionOperation::processReceivedData(query::DataResponse *response) {
         // TODO introduce ColumnChunk<void> that always fails
         col = new ColumnChunk<int>();
         col->size = chunk_size;
-        printf("adding dummy column with index %d\n", i);
+        //printf("adding dummy column with index %d\n", i);
         chunk->push_back(col);
         continue;
       }
@@ -452,7 +452,7 @@ void UnionOperation::processReceivedData(query::DataResponse *response) {
     cache.push(chunk);
     from_row += chunk_size;
   }
-  printf("UnionOperation::consume... END\n");
+  //printf("UnionOperation::consume... END\n");
 }
 
 std::ostream& UnionOperation::debugPrint(std::ostream& output) {

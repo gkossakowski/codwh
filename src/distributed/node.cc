@@ -100,6 +100,6 @@ void WorkerNode::run() {
     assert(communication.requests.empty()); // no pending request after we finish the stripe
     delete st;
   };
-  communication.debugPrint("Finished succesfully");
+  printf("Finished succesfully\n");
   return ;
 }

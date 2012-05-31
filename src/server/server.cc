@@ -110,20 +110,20 @@ int SimpleServer::GetBitBools(int c, int n, char* d) {
 void SimpleServer::ConsumeDoubles(int column_index, int number,
                                   const double* d) {
   for (int i = 0; i < number; ++i) {
-    printf("C%d: %f\n", column_index, d[i]);
+    //printf("C%d: %f\n", column_index, d[i]);
   }
 }
 
 void SimpleServer::ConsumeInts(int column_index, int number, const int32* d) {
   for (int i = 0; i < number; ++i) {
-    printf("C%d: %d\n", column_index, d[i]);
+    //printf("C%d: %d\n", column_index, d[i]);
   }
 }
 
 void SimpleServer::ConsumeByteBools(int column_index, int number,
                                     const bool* d) {
   for (int i = 0; i < number; ++i) {
-    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
+    //printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
   }
 }
 
@@ -136,7 +136,7 @@ void SimpleServer::ConsumeBitBools(int column_index, int number,
       mask = 1;
       pos += 1;
     }
-    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
+    //printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
     mask <<= 1;
   }
 }

@@ -274,17 +274,17 @@ RealDataServer::~RealDataServer() {
 
 int RealDataServer::GetDoubles(int c, int n, double* d) {
   double res = column_servers_[c]->GetDoubles(n, d);
-  printf("Generating doubles:\n");
+  //printf("Generating doubles:\n");
   ConsumeDoubles(c, res, d);
-  printf("End generating:\n");
+  //printf("End generating:\n");
   return res;
 }
 
 int RealDataServer::GetInts(int c, int n, int32* d) {
   int res = column_servers_[c]->GetInts(n, d);
-  printf("Generating int:\n");
+  //printf("Generating int:\n");
   ConsumeInts(c, res, d);
-  printf("End generating:\n");
+  //printf("End generating:\n");
   return res;
 }
 
@@ -299,20 +299,20 @@ int RealDataServer::GetBitBools(int c, int n, char* d) {
 void RealDataServer::ConsumeDoubles(int column_index, int number,
                                   const double* d) {
   for (int i = 0; i < number; ++i) {
-    printf("C%d: %f\n", column_index, d[i]);
+    //printf("C%d: %f\n", column_index, d[i]);
   }
 }
 
 void RealDataServer::ConsumeInts(int column_index, int number, const int32* d) {
   for (int i = 0; i < number; ++i) {
-    printf("C%d: %d\n", column_index, d[i]);
+    //printf("C%d: %d\n", column_index, d[i]);
   }
 }
 
 void RealDataServer::ConsumeByteBools(int column_index, int number,
                                     const bool* d) {
   for (int i = 0; i < number; ++i) {
-    printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
+    //printf("C%d: %s\n", column_index, d[i] ? "TRUE" : "FALSE");
   }
 }
 
@@ -325,7 +325,7 @@ void RealDataServer::ConsumeBitBools(int column_index, int number,
       mask = 1;
       pos += 1;
     }
-    printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
+    //printf("C%d: %s\n", column_index, (d[pos] & mask) ? "TRUE" : "FALSE");
     mask <<= 1;
   }
 }
@@ -346,7 +346,7 @@ public:
    return value < dynamic_cast<const DoubleTestValue&>(other).value;
   }
   virtual void print() const {
-    printf("%f", value);
+    //printf("%f", value);
   }
 private:
   double value;
@@ -360,7 +360,7 @@ public:
     return value < dynamic_cast<const IntTestValue&>(other).value;
   }
   virtual void print() const {
-    printf("%d", value);
+    //printf("%d", value);
   }
 private:
   int value;
@@ -373,7 +373,7 @@ public:
     return value < dynamic_cast<const BoolTestValue&>(other).value;
   }
   virtual void print() const {
-    value ? printf("TRUE") : printf("FALSE");
+    //value ? printf("TRUE") : printf("FALSE");
   }
 private:
   bool value;

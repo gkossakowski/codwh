@@ -279,7 +279,7 @@ ColumnProviderServer<char>::pull() {
 template <class T>
 inline ColumnChunk<T>*
 deserializeChunk(int from_row, const char bytes[], size_t rows) {
-  printf("deserializeChunk...\n");
+  //printf("deserializeChunk...\n");
   ColumnChunk<T> *col = new ColumnChunk<T>();
   const T* values = reinterpret_cast<const T*>(bytes);
   assert(rows <= (size_t) DEFAULT_CHUNK_SIZE);

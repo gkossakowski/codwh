@@ -14,7 +14,7 @@
 
 #define LOG1(str, x1) //printf(str "\n", x1);
 #define LOG2(str, x1, x2) //printf(str "\n", x1, x2);
-#define LOG3(str, x1, x2, x3) printf(str "\n", x1, x2, x3);
+#define LOG3(str, x1, x2, x3) //printf(str "\n", x1, x2, x3);
 #define LOG4(str, x1, x2, x3, x4) //printf(str "\n", x1, x2, x3, x4);
 
 #endif /* LOGGER_H_ */

@@ -31,8 +31,7 @@ Factory::createOperation(const query::Operation& operation) {
   } else if (operation.has_final()) {
     return new FinalOperation(operation.final());
   } else {
-    std::cout << "ERROR: unknown operation" <<
-        operation.DebugString() << "\n";
+    // std::cout << "ERROR: unknown operation" << operation.DebugString() << "\n";
     assert(false);
     return NULL;
   }
@@ -126,7 +125,7 @@ static int findType(
         assert(false);
       }
     default:
-      std::cout << expression.DebugString() << "\n";
+      //std::cout << expression.DebugString() << "\n";
       assert(false);
   }
   return 0;

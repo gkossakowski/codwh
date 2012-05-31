@@ -274,16 +274,16 @@ void SchedulerNode::schedule(vector<query::Operation> *fragments, uint32_t nodes
     nodeIdsNext.push_back(i);
   }
   
-  printf("nodeIds: ");
+  //printf("nodeIds: ");
   for (unsigned int i = 0; i < nodeIds.size(); i++) {
-    printf("%d, ", nodeIds[i]);
+    //printf("%d, ", nodeIds[i]);
   }
-  printf("\n");
-  printf("nodeIdsNext: ");
+  //printf("\n");
+  //printf("nodeIdsNext: ");
   for (unsigned int i = 0; i < nodeIdsNext.size(); i++) {
-    printf("%d, ", nodeIdsNext[i]);
+    //printf("%d, ", nodeIdsNext[i]);
   }
-  printf("\n");
+  //printf("\n");
   
   vector< std::pair<int, int> > previousStripeIds;
   int stripeId = 0;
@@ -361,7 +361,7 @@ void SchedulerNode::schedule(vector<query::Operation> *fragments, uint32_t nodes
 }
 
 void SchedulerNode::sendJob(query::Operation &op, uint32_t node, int stripeId) {
-  printf("Enqueing stripe[%d] to worker[%d]\n\n", stripeId, node);
+  //printf("Enqueing stripe[%d] to worker[%d]\n\n", stripeId, node);
   nodesJobs[node].push_back(std::make_pair(stripeId, op));
 }
 
@@ -382,21 +382,21 @@ void SchedulerNode::flushJobs() {
     }
     
     com.SerializeToString(&msg);
-    printf("Sending jobs to worker[%d]\n\n%s", node, com.DebugString().c_str());
+    //printf("Sending jobs to worker[%d]\n\n%s", node, com.DebugString().c_str());
     communication.nei->SendPacket(node, msg.c_str(), msg.size());
   }
 }
 
 void SchedulerNode::run(const query::Operation &op) {
-  std::cout << "Scheduling proto: " << op.DebugString() << "\n";
+  //std::cout << "Scheduling proto: " << op.DebugString() << "\n";
   int numberOfInputFiles = extractInputFilesNumber(op);
-  printf("number of input files: %d\n", numberOfInputFiles);
+  //printf("number of input files: %d\n", numberOfInputFiles);
   vector<query::Operation> *fragments = makeFragments(op);
-  std::cout << "after cutting the query into fragments: " << std::endl;
-  for (unsigned i=0; i < fragments->size() ; i++) {
+  //std::cout << "after cutting the query into fragments: " << std::endl;
+  /*for (unsigned i=0; i < fragments->size() ; i++) {
     std::cout << "FRAGMENT " << i << std::endl;
     std::cout << (*fragments)[i].DebugString() << std::endl;
-  }
+  }*/
   // node[0]: scheduler, node[1]: final operation
   schedule(fragments, communication.nei->nodes_count(), numberOfInputFiles);
   flushJobs();
