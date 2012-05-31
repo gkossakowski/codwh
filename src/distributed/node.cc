@@ -98,6 +98,7 @@ void WorkerNode::run() {
     communication.jobs.pop();
     stripe = -1;
     assert(communication.requests.empty()); // no pending request after we finish the stripe
+    delete st;
   };
   communication.debugPrint("Finished succesfully");
   return ;
