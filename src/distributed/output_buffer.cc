@@ -158,6 +158,7 @@ void OutputBuffer::flushBucket(int bucket) {
     output[bucket].pop(); // remove packet from queue
     pending_requests[bucket]--;
     full_packets--;
+    delete nodePacket; // dump nodePacket
     delete packet; // dump packet
   }
 }
