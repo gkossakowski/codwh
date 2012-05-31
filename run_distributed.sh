@@ -19,7 +19,7 @@ INIT_PORT=16000
 QUERY_NUM=$1
 
 SCHED_CMD="./codwh/src/scheduler"
-SCHED_PARAMS="$1 $2 0"
+SCHED_PARAMS="$1 $2"
 WORK_CMD="./codwh/src/worker"
 MONITOR_CMD="./codwh/monitor.sh"
 
@@ -38,9 +38,9 @@ i=1
 WORKER_PORT=$((INIT_PORT + 1))
 for worker in $WORK_HOSTS; do
     echo Running worker $WORKER_PORT
-    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $SCHED_HOST:$INIT_PORT $HOSTS &>worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
-    SSH_PIDS="$SSH_PIDS $!"
     $SSH $USER@$worker$DOMAIN bash -c "\"$MONITOR_CMD worker_$((WORKER_PORT))_pid >monitor_$(($WORKER_PORT))_log & echo \\\$! > monitor_$(($WORKER_PORT))_pid\"" &
+    SSH_PIDS="$SSH_PIDS $!"
+    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $SCHED_HOST:$INIT_PORT $HOSTS &>/tmp/worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
     i=$(( i + 1 ))
     WORKER_PORT=$(( WORKER_PORT + 1 ))
@@ -78,7 +78,11 @@ for pid in $SSH_PIDS; do
     wait $pid
 done
 
+min=`cat monitor_16001_log | awk '{ print $1 "\n"; }' | head -1`
+max=`cat monitor_16001_log | awk '{ print $1 "\n"; }' | tail -2 | head -1`
+
 echo "set terminal png size 1024,2048" > gnuplotcmd
+echo "set xrange [$min:$max]" >> gnuplotcmd
 echo "set output \"system_params.png\"" >> gnuplotcmd
 echo "DX=1.00; DY=1.00; SX=3; SY=3" >> gnuplotcmd
 echo "set bmargin DX; set tmargin DX; set lmargin DY; set rmargin DY" >> gnuplotcmd
