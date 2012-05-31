@@ -248,7 +248,7 @@ void assignFileToScan(query::Operation& stripe, int fileToScan) {
   }
 }
 
-void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, int numberOfFiles) {
+void SchedulerNode::schedule(vector<query::Operation> *fragments, uint32_t nodes, int numberOfFiles) {
   // we reserve two nodes:
   // node[0]: scheduler
   // node[1]: final operation
@@ -295,10 +295,10 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   vector<query::Operation> previousStripes;
   // process the first fragment
   {
-    query::Operation& firstStripe = stripes->front();
+    query::Operation& firstStripe = fragments->front();
     // TODO: special hack for case of only two stripes, I need to refactor this
     // code to handle it in more elegant way
-    if (stripes->size() == 2) {
+    if (fragments->size() == 2) {
       assignReceiversCount(firstStripe, 1);
     } else {
       assignReceiversCount(firstStripe, nodeIdsNext.size());
@@ -314,8 +314,8 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
   }
   std::swap(nodeIds, nodeIdsNext);
   // process inner fragments
-  for (unsigned i = 1; i + 1 < stripes->size(); i++) {
-    query::Operation& stripe = (*stripes)[i];
+  for (unsigned i = 1; i + 1 < fragments->size(); i++) {
+    query::Operation& stripe = (*fragments)[i];
     vector< std::pair<int, int> > stripeIds;
     vector<query::Operation> currentStripes;
     // assign to union nodes and stripes that were
@@ -346,7 +346,7 @@ void SchedulerNode::schedule(vector<query::Operation> *stripes, uint32_t nodes, 
       assignReceiversCount(previousStripe, 1);
       sendJob(previousStripe, previousStripeIds[j].first, previousStripeIds[j].second);
     }
-    query::Operation lastStripe = stripes->back();
+    query::Operation lastStripe = fragments->back();
     assignNodesToUnion(lastStripe, previousStripeIds);
     sendJob(lastStripe, 1, stripeId);
   }
