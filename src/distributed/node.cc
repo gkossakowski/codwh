@@ -11,7 +11,7 @@ namespace global {
 }
 
 WorkerNode::WorkerNode(NodeEnvironmentInterface *nei)
-  : communication(nei, &stripe) {
+  : stripe(-1), communication(nei, &stripe) {
   global::worker = this;
 }
 
@@ -84,8 +84,8 @@ int WorkerNode::execPlan(query::Operation *op) {
 
 void WorkerNode::run() {
   int ret = 0;
-  while (0 == ret) {
-    communication.getJob();
+  communication.getJob();
+  while (0 == ret && !communication.jobs.empty()) {
     query::NetworkMessage::Stripe *st;
     st = communication.jobs.front();
     stripe = st->stripe();
@@ -96,7 +96,9 @@ void WorkerNode::run() {
     }
     execPlan(st->mutable_operation());
     communication.jobs.pop();
+    stripe = -1;
     assert(communication.requests.empty()); // no pending request after we finish the stripe
   };
+  communication.debugPrint("Finished succesfully");
   return ;
 }
