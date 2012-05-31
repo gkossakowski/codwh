@@ -1,5 +1,4 @@
 #include <queue>
-#include <iostream>
 
 #include "proto/operations.pb.h"
 #include "node_environment/node_environment.h"
@@ -114,7 +113,6 @@ vector<query::Operation> fragmentOperation(const query::Operation query) {
 vector<query::ColumnType> getColumnTypes(const query::Operation& opProto) {
   Operation* op = Factory::createOperation(opProto);
   vector<query::ColumnType> result = op->getTypes();
-  std::cout << *op;
   delete op;
   return result;
 }
@@ -218,7 +216,6 @@ int extractInputFilesNumber(const query::Operation& query) {
     return extractInputFilesNumber(query.final().source());
   } else {
     // unknown case
-    std::cout << "ERROR: unknown operation: " << query.DebugString() << std::endl;
     assert(false);
   }
 }
