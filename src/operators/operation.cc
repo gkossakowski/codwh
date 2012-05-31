@@ -377,6 +377,7 @@ vector<Column*>* UnionOperation::pull() {
           dataResponse->node(), dataResponse->stripe());
       finished++; // got EOF
     }
+    delete dataResponse;
   }
 
   if (cache.size() == 0){
