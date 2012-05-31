@@ -252,8 +252,16 @@ void SchedulerNode::schedule(vector<query::Operation> *fragments, uint32_t nodes
   // we reserve two nodes:
   // node[0]: scheduler
   // node[1]: final operation
-  // nodesPerStripe is half rounded up
-  int nodesPerStripe = (nodes - 2 + 1) / 2;
+  int nodesPerStripe = -1;
+  if (fragments->size() == 2) {
+    // if we have only two fragments then it means there's only fragment for
+    // input files and union, we should assign all workers (apart from two)
+    // to the first fragment
+    nodesPerStripe = nodes - 2;
+  } else {
+    // nodesPerStripe is half rounded up
+    nodesPerStripe = (nodes - 2 + 1) / 2;
+  }
   // we don't handle situation when we have one worker only
   assert(nodesPerStripe > 0);
   // we divide workers into two groups that will be used for two consecutive layers of stripes
