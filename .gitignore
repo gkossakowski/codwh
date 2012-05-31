@@ -6,3 +6,7 @@ src/worker
 src/scheduler
 test-actual
 *.swp
+/codwh-xcode/DerivedData
+/codwh-xcode/codwh-xcode.xcodeproj/project.xcworkspace/xcuserdata/grek.xcuserdatad/UserInterfaceState.xcuserstate
+/codwh-xcode/codwh-xcode.xcodeproj/project.xcworkspace/xcuserdata/grek.xcuserdatad/WorkspaceSettings.xcsettings
+/codwh-xcode/codwh-xcode.xcodeproj/xcuserdata/grek.xcuserdatad/xcdebugger/Breakpoints.xcbkptlist

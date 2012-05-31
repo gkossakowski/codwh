@@ -4,24 +4,49 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>codwh.xcscheme</key>
+		<key>build all.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>0</integer>
+			<integer>5</integer>
+		</dict>
+		<key>codwh-lib.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>4</integer>
 		</dict>
 		<key>q1.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>0</integer>
 		</dict>
 		<key>q7.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>scheduler.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
 			<integer>2</integer>
+		</dict>
+		<key>worker.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>3</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>312E7F9A1569983600E2AD66</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>312E7FA91569985900E2AD66</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>31363B8F1545C3E100CE05DD</key>
 		<dict>
 			<key>primary</key>
@@ -38,6 +63,11 @@
 			<true/>
 		</dict>
 		<key>31363BF91548468C00CE05DD</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>314277B51577A370006A6878</key>
 		<dict>
 			<key>primary</key>
 			<true/>

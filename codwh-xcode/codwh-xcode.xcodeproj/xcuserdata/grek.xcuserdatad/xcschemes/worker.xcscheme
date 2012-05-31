@@ -13,9 +13,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "31363B8F1545C3E100CE05DD"
-               BuildableName = "codwh"
-               BlueprintName = "codwh"
+               BlueprintIdentifier = "312E7FA91569985900E2AD66"
+               BuildableName = "worker"
+               BlueprintName = "worker"
                ReferencedContainer = "container:codwh-xcode.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -31,9 +31,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "31363B8F1545C3E100CE05DD"
-            BuildableName = "codwh"
-            BlueprintName = "codwh"
+            BlueprintIdentifier = "312E7FA91569985900E2AD66"
+            BuildableName = "worker"
+            BlueprintName = "worker"
             ReferencedContainer = "container:codwh-xcode.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -50,9 +50,9 @@
       <BuildableProductRunnable>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "31363B8F1545C3E100CE05DD"
-            BuildableName = "codwh"
-            BlueprintName = "codwh"
+            BlueprintIdentifier = "312E7FA91569985900E2AD66"
+            BuildableName = "worker"
+            BlueprintName = "worker"
             ReferencedContainer = "container:codwh-xcode.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -68,9 +68,9 @@
       <BuildableProductRunnable>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "31363B8F1545C3E100CE05DD"
-            BuildableName = "codwh"
-            BlueprintName = "codwh"
+            BlueprintIdentifier = "312E7FA91569985900E2AD66"
+            BuildableName = "worker"
+            BlueprintName = "worker"
             ReferencedContainer = "container:codwh-xcode.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
