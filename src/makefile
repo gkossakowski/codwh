@@ -1,5 +1,5 @@
 INC=-Ibuild/ -I../build/ -Iserver/ -I. -I/opt/local/include/
-CC=g++ -g -rdynamic -Wall -ggdb ${INC} ${FLAGS}
+CC=g++ -Wall -Os ${INC} ${FLAGS}
 OBJS=build/proto.o build/server.o \
 		 build/operators/node.o build/groupby.o \
 		 build/operators/factory.o \
