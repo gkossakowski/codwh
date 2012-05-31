@@ -11,6 +11,8 @@ class Node {
  public:
   /** Prints the tree.*/
   virtual std::ostream& debugPrint(std::ostream& output) = 0; 
+
+  virtual ~Node();
 };
 
 std::ostream& operator<<(std::ostream& output, Node& node);

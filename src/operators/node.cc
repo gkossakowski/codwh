@@ -7,3 +7,4 @@ std::ostream& operator<<(std::ostream& output, Node& node) {
   return node.debugPrint(output);
 }
 
+Node::~Node(){}
