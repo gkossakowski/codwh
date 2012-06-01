@@ -12,13 +12,14 @@
 #include <utility>
 #include <string>
 #include <iostream>
+#include <cstring>
 
 using ::std::min;
 using ::std::vector;
 using ::std::string;
 using ::std::cout;
 
-#define dprintf(...)
+//#define dprintf(...)
 #define printf(...)
 //#define dprintf printf
 // dprintf already exists - it prints to the given descriptor
@@ -224,6 +225,7 @@ class BoolColumnServer : public ColumnServer {
   virtual int GetBitBools(int number, char* destination) {
     printf("SERVING probability %d\n", probability_);
     number = Serve(number);
+    memset(destination, 0, (number + 7) / 8);
     for (int i = 0; i < number; ++i) {
       destination[i / 8] |= (Generate() << (i & 7));
     }
@@ -240,7 +242,7 @@ class BoolColumnServer : public ColumnServer {
 
 // RealDataServer implementation.
 RealDataServer::RealDataServer(const vector<int> &column_types) {
-  int query_size = 10; //random(1000000, 10000000);
+  int query_size = random(10000, 100000);
   // TODO: increase size of query
   vector<int>::const_iterator it;
   for (it = column_types.begin(); it != column_types.end(); ++it) {

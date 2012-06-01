@@ -32,7 +32,7 @@ void NodePacket::consume(vector<Column*> view){
   assert(!isEOF());
 
   for (uint32_t i = 0; i < view.size(); i++)
-    offsets[i] += view[i]->transfuse(columns[i] + offsets[i]);
+    offsets[i] += view[i]->transfuse(columns[i], offsets[i]);
   size += static_cast<size_t>(view[0]->size);
 
   if (capacity - size < static_cast<size_t>(DEFAULT_CHUNK_SIZE))

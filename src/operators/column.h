@@ -26,7 +26,7 @@ class Column {
   Column(): size(0) { }
   int size;
   virtual query::ColumnType getType() = 0;
-  virtual size_t transfuse(void *dst) = 0;
+  virtual size_t transfuse(char* dst, int offset) = 0;
   virtual void consume(int column_index, Server* server) = 0;
   virtual void filter(Column* cond, Column* result) = 0;
   virtual void fill(any_t* any, int idx) = 0;
@@ -42,7 +42,7 @@ class ColumnChunk : public Column {
  public:
   T chunk[DEFAULT_CHUNK_SIZE];
   query::ColumnType getType();
-  size_t transfuse(void *dst);
+  size_t transfuse(char* dst, int offset);
   void consume(int column_index, Server* server);
   void fill(any_t* any, int idx);
   void addTo(any_t* any, int idx);
@@ -79,10 +79,24 @@ ColumnChunk<T>::getType(){
   return global::getType<T>();
 }
 
+template<>
+inline size_t
+ColumnChunk<char>::transfuse(char* dst, int offset) {
+  for (int i = 0 ; i < size ; ++i) {
+    int id = i + offset;
+    if (chunk[i / 8] & (1 << (i & 0x7))) {
+      dst[id / 8] |= 1 << (id & 0x7);
+    } else {
+      dst[id / 8] &= ~(1 << (id & 0x7));
+    }
+  }
+  return size;
+}
+
 template<class T>
 inline size_t
-ColumnChunk<T>::transfuse(void *dst) {
-  std::copy(chunk, chunk + size, reinterpret_cast<T*>(dst));
+ColumnChunk<T>::transfuse(char* dst, int offset) {
+  std::copy(chunk, chunk + size, reinterpret_cast<T*>(dst + offset));
   return size * sizeof(T);
 }
 
@@ -284,6 +298,23 @@ deserializeChunk(int from_row, const char bytes[], size_t rows) {
   const T* values = reinterpret_cast<const T*>(bytes);
   assert(rows <= (size_t) DEFAULT_CHUNK_SIZE);
   std::copy(values + from_row, values + from_row + rows, col->chunk);
+  col->size = rows;
+  return col;
+}
+
+template <>
+inline ColumnChunk<char>*
+deserializeChunk(int from_row, const char bytes[], size_t rows) {
+  //printf("deserializeChunk...\n");
+  ColumnChunk<char> *col = new ColumnChunk<char>();
+  assert(rows <= (size_t) DEFAULT_CHUNK_SIZE);
+  memset(col->chunk, 0, DEFAULT_CHUNK_SIZE);
+  for (unsigned i = 0 ; i < rows ; ++i) {
+    unsigned id = i + from_row;
+    if (bytes[id / 8] & (1 << (id & 0x7))) {
+      col->chunk[i / 8] |= 1 << (i & 0x7);
+    }
+  }
   col->size = rows;
   return col;
 }
