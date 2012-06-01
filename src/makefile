@@ -1,6 +1,6 @@
 INC=-Ibuild/ -I../build/ -Iserver/ -I. -I/opt/local/include/
+#CC=g++ -Wall -g -ggdb -rdynamic ${INC} ${FLAGS}
 CC=g++ -Wall -Os ${INC} ${FLAGS}
-CC=g++ -Wall -g -ggdb -rdynamic ${INC} ${FLAGS}
 OBJS=build/proto.o build/server.o \
 		 build/operators/node.o build/groupby.o \
 		 build/operators/factory.o \
@@ -29,7 +29,7 @@ NET_OBJS= build/proto.o \
 		 build/distributed/input_buffer.o \
 		 build/distributed/output_buffer.o
 		 
-LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
+LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options-mt
 
 # Ugly hack for an older version of boost on `students`
 ifneq (,$(wildcard /usr/lib64/libboost_thread.so))

@@ -21,7 +21,7 @@ SCHEDULER="./src/scheduler"
 
 if $USE_VALGRIND
 then
-  VALGRIND="valgrind --leak-check=full -v --suppressions=valgrind.suppressions"
+  VALGRIND="valgrind --leak-check=full --show-reachable=yes"
   #Use to generate suppresions
   #VALGRIND="valgrind --leak-check=full --show-reachable=yes --error-limit=no --gen-suppressions=all --log-file=minimalraw.log"
 
@@ -55,9 +55,9 @@ $SCHEDULER $QUERY_NUM $3 0 $START_PORT $QUERY_NUM $HOSTS &> "logs/000" &
 PIDS="$PIDS $!"
 
 echo $PIDS
-sleep 5
+sleep 100
 
-cat `find ./logs -type f | sort`
+#cat `find ./logs -type f | sort`
 
 killall worker
 

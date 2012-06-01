@@ -9,5 +9,5 @@ scan {
   type: DOUBLE
   column: 3
   type: BOOL
-  number_of_files: 3;
+  number_of_files: 10;
 }

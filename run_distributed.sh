@@ -14,7 +14,7 @@ SSH="ssh -o StrictHostKeyChecking=no"
 USER=rr277637
 DOMAIN=".mimuw.edu.pl"
 SCHED_HOST="students"
-WORK_HOSTS="students students"
+WORK_HOSTS="blue01 blue02 blue03 blue05 blue06 blue07 blue08 blue09 blue10 blue11 blue12 blue13 blue14 blue15"
 INIT_PORT=16000
 QUERY_NUM=$1
 
@@ -23,7 +23,7 @@ SCHED_PARAMS="$1 $2"
 WORK_CMD="./codwh/src/worker"
 MONITOR_CMD="./codwh/monitor.sh"
 
-#HOSTS="$SCHED_HOST:$INIT_PORT"
+HOSTS="$SCHED_HOST:$INIT_PORT"
 WORKER_PORT=$((INIT_PORT + 1))
 for worker in $WORK_HOSTS; do
     HOSTS="$HOSTS $worker:$WORKER_PORT"
@@ -40,7 +40,7 @@ for worker in $WORK_HOSTS; do
     echo Running worker $WORKER_PORT
     $SSH $USER@$worker$DOMAIN bash -c "\"$MONITOR_CMD worker_$((WORKER_PORT))_pid >monitor_$(($WORKER_PORT))_log & echo \\\$! > monitor_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
-    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $SCHED_HOST:$INIT_PORT $HOSTS &>/tmp/worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
+    $SSH $USER@$worker$DOMAIN bash -c "\"$WORK_CMD $i $WORKER_PORT $QUERY_NUM $HOSTS &>/tmp/worker_$(($WORKER_PORT))_log & echo \\\$! > worker_$(($WORKER_PORT))_pid\"" &
     SSH_PIDS="$SSH_PIDS $!"
     i=$(( i + 1 ))
     WORKER_PORT=$(( WORKER_PORT + 1 ))
