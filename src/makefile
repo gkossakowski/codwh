@@ -29,7 +29,7 @@ NET_OBJS= build/proto.o \
 		 build/distributed/input_buffer.o \
 		 build/distributed/output_buffer.o
 		 
-LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options-mt
+LIBS=-lprotobuf -lpthread -L/opt/local/lib/ -lboost_program_options
 
 # Ugly hack for an older version of boost on `students`
 ifneq (,$(wildcard /usr/lib64/libboost_thread.so))
